@@ -12,3 +12,4 @@ test-results/
 .omx/logs/
 .omx/state/
 .omx/metrics.json
+.vercel
