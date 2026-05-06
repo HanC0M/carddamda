@@ -1,0 +1,16 @@
+{
+  "task": "result-group-density-rule",
+  "verdict": "GO",
+  "summary": "Large search sessions now default to three expanded requested-card groups, with remaining groups collapsed for scanability. Result groups no longer shrink inside the outer flex scroller.",
+  "evidence": [
+    "DEFAULT_EXPANDED_RESULT_GROUPS is set to 3",
+    "Successful searches collapse groups after the first three",
+    "Session-level failed searches apply the same collapse rule",
+    ".sc-group has flex: 0 0 auto to prevent clipped internal scroll containers",
+    "npm test passed: 5 files, 11 tests",
+    "npm run build passed"
+  ],
+  "knownLimitations": [
+    "The expanded group count is fixed in code for V1 and is not yet user-configurable."
+  ]
+}

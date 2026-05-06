@@ -1,0 +1,15 @@
+{
+  "task": "result-group-scroll-adjustment",
+  "verdict": "GO",
+  "summary": "Result group scrolling now behaves more naturally for short groups while preserving internal scrolling for long result sets.",
+  "evidence": [
+    "Short groups are less likely to hit the internal max-height threshold after increasing viewport allowance",
+    "Nested scroll friction reduced with overscroll-behavior containment",
+    "Mobile result groups use page scrolling instead of internal group scrolling",
+    "npm test passed: 5 files, 11 tests",
+    "npm run build passed"
+  ],
+  "knownLimitations": [
+    "Long desktop result groups still scroll internally by design to keep multiple requested-card groups usable."
+  ]
+}

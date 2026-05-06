@@ -1,0 +1,20 @@
+{
+  "task": "cardsquare-search-url",
+  "verdict": "GO",
+  "summary": "CardSquare search coverage and product URL generation are fixed. The provider now queries a CardSquare-biased term and rewrites CardSquare SmartStore product links to the observed live slug, sulyunyen.",
+  "rootCause": [
+    "General Naver Shopping queries often return CardKingdom preferred results but omit CardSquare from the first page.",
+    "CardSquare products were incorrectly rewritten to /yugiohstore/products/{id}. Naver's own /main/products/{id} redirect for the reproduced product points to /sulyunyen/products/{id}."
+  ],
+  "evidence": [
+    "npm test passed: 5 files, 11 tests",
+    "npm run build passed",
+    "Live API spot check for 도마우스 returned CardKingdom 1 and CardSquare 2",
+    "Live API spot check for 블랙 매지션 returned CardKingdom 10 and CardSquare 41",
+    "curl -I on /main/products/13184266985 returned 307 location /sulyunyen/products/13184266985"
+  ],
+  "knownLimitations": [
+    "Naver SmartStore can still apply browser/session security, login, or 429 behavior outside the app's control.",
+    "Broad terms can now surface many CardSquare variants because the app intentionally includes a CardSquare-specific query."
+  ]
+}

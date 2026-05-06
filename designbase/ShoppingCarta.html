@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>카드담다</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#121212;
+    --surface:#181818;
+    --surface-2:#1f1f1f;
+    --surface-3:#252525;
+    --surface-4:#2a2a2a;
+    --border:#2c2c2c;
+    --border-2:#3a3a3a;
+    --border-3:#4d4d4d;
+    --text:#ffffff;
+    --text-2:#cbcbcb;
+    --text-3:#b3b3b3;
+    --text-4:#7c7c7c;
+    --accent:#1ed760;
+    --accent-2:#1db954;
+    --accent-ink:#000000;
+    --neg:#f3727f;
+    --warn:#ffa42b;
+    --info:#539df5;
+    --shadow-card: rgba(0,0,0,0.3) 0px 8px 8px;
+    --shadow-dialog: rgba(0,0,0,0.5) 0px 8px 24px;
+    --inset: inset 0 0 0 1px #2c2c2c;
+    --font: "Noto Sans KR", "Helvetica Neue", Helvetica, Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;font-feature-settings:"kern" 1,"ss01" 1}
+  body{font-size:14px;line-height:1.45}
+  button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+  input{font-family:inherit;color:inherit}
+  ::selection{background:var(--accent);color:#000}
+
+  /* Scrollbars */
+  *::-webkit-scrollbar{width:10px;height:10px}
+  *::-webkit-scrollbar-track{background:transparent}
+  *::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:9999px;border:2px solid transparent;background-clip:content-box}
+  *::-webkit-scrollbar-thumb:hover{background:#3a3a3a;background-clip:content-box;border:2px solid transparent}
+
+  #root{min-height:100vh;display:flex;flex-direction:column}
+</style>
+<script type="application/json" id="speaker-notes">[]</script>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+</body>
+</html>

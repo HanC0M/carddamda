@@ -1,0 +1,15 @@
+{
+  "task": "result-group-internal-scroll-fix",
+  "verdict": "GO",
+  "summary": "Result groups now become internal scroll containers at around 3 product rows, while the outer search result area remains independently scrollable.",
+  "evidence": [
+    "Desktop group body max-height is 276px, below the height of 3 product rows",
+    "Mobile group body max-height is 242px with internal overflow restored",
+    "Overscroll containment remains enabled for nested scroll behavior",
+    "npm test passed: 5 files, 11 tests",
+    "npm run build passed"
+  ],
+  "knownLimitations": [
+    "Browser trackpad momentum can hand off from the group to the outer list once the group reaches its scroll boundary."
+  ]
+}

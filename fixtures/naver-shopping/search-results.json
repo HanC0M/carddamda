@@ -1,0 +1,64 @@
+{
+  "lastBuildDate": "Wed, 06 May 2026 20:00:00 +0900",
+  "total": 2,
+  "start": 1,
+  "display": 2,
+  "items": [
+    {
+      "title": "<b>피카츄 ex</b> SAR 포켓몬 카드",
+      "link": "https://smartstore.naver.com/cardmania/products/1001",
+      "image": "https://example.com/pikachu.jpg",
+      "lprice": "48000",
+      "mallName": "카드매니아",
+      "productId": "1001"
+    },
+    {
+      "title": "<b>피카츄 ex</b> SAR 포켓몬 카드",
+      "link": "http://www.tcgshop.co.kr/goods_detail.php?goodsIdx=2002",
+      "image": "",
+      "lprice": "46500",
+      "mallName": "TCGShop",
+      "productId": "2002"
+    },
+    {
+      "title": "중복 상품",
+      "link": "https://example.com/duplicate",
+      "image": "",
+      "lprice": "99999",
+      "mallName": "중복샵",
+      "productId": "1001"
+    },
+    {
+      "title": "유희왕 한글판 <b>증식의G</b> 울트라레어",
+      "link": "https://smartstore.naver.com/main/products/8312162594",
+      "image": "",
+      "lprice": "12000",
+      "mallName": "카드킹덤",
+      "productId": "3003"
+    },
+    {
+      "title": "파라오의 심복-블랙 매지션",
+      "link": "https://smartstore.naver.com/main/products/13184266985",
+      "image": "",
+      "lprice": "16000",
+      "mallName": "유희왕STORE",
+      "productId": "4004"
+    },
+    {
+      "title": "직접 슬러그 카드킹덤 상품",
+      "link": "https://smartstore.naver.com/cardkingdom/products/5555",
+      "image": "",
+      "lprice": "22000",
+      "mallName": "스마트스토어",
+      "productId": "5005"
+    },
+    {
+      "title": "직접 슬러그 유희왕스토어 상품",
+      "link": "https://smartstore.naver.com/yugiohstore/products/6666",
+      "image": "",
+      "lprice": "33000",
+      "mallName": "스마트스토어",
+      "productId": "6006"
+    }
+  ]
+}

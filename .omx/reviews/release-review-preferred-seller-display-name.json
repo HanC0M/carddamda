@@ -1,0 +1,15 @@
+{
+  "task": "preferred-seller-display-name",
+  "verdict": "GO",
+  "summary": "Yugioh Store preferred seller results are now displayed as 카드스퀘어 while preserving the existing yugiohstore detection and canonical link behavior.",
+  "evidence": [
+    "Naver normalizer maps Yugioh Store/yugiohstore matches to merchantName 카드스퀘어",
+    "Normalizer test covers mallName-based and direct slug-based 카드스퀘어 display",
+    "Search provider contract documents preferred seller display-name normalization",
+    "npm test passed: 4 files, 9 tests",
+    "npm run build passed"
+  ],
+  "knownLimitations": [
+    "External SmartStore links still use the provider's yugiohstore slug; only the app-facing seller label changes."
+  ]
+}

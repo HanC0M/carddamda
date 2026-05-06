@@ -1,0 +1,20 @@
+{
+  "task": "preserve-naver-smartstore-links",
+  "verdict": "GO",
+  "summary": "Outbound SmartStore links now preserve Naver Shopping API link values instead of guessing canonical store slugs. This fixes product-not-found failures caused by unstable slug rewriting.",
+  "rootCause": [
+    "The app rewrote /main/products/{id} links to guessed SmartStore slug URLs.",
+    "Live Naver responses show /main/products/{id} is the stable resolver and may redirect to cardkingdom, yugiohstore, or sulyunyen depending on the product."
+  ],
+  "evidence": [
+    "npm test passed: 5 files, 11 tests",
+    "npm run build passed",
+    "Live provider spot check for 도마우스 returned /main/products links for CardKingdom and CardSquare",
+    "curl -I on CardKingdom /main/products link returned 307 location /cardkingdom/products/11153000742",
+    "curl -I on CardSquare /main/products link returned 307 location /yugiohstore/products/11151278987"
+  ],
+  "knownLimitations": [
+    "Naver SmartStore can still show login/security/429 behavior depending on the user session.",
+    "The app should not infer final SmartStore slugs unless Naver exposes a stable canonical URL in the API."
+  ]
+}
