@@ -67,6 +67,14 @@
       "lprice": "7700",
       "mallName": "스마트스토어",
       "productId": "7007"
+    },
+    {
+      "title": "유희왕 한글판 TCG마트 상품",
+      "link": "https://smartstore.naver.com/tcgmart/products/8888",
+      "image": "",
+      "lprice": "8800",
+      "mallName": "스마트스토어",
+      "productId": "8008"
     }
   ]
 }

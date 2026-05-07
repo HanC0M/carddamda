@@ -6,22 +6,31 @@ describe('naver shopping provider', () => {
     expect(buildNaverShoppingSearchTerms('증식의 G')).toEqual([
       '증식의 G',
       '증식의 G 카드스퀘어',
-      '증식의 G 카드냥'
+      '증식의 G 카드냥',
+      '증식의 G TCG마트'
     ]);
   });
 
-  it('does not duplicate CardSquare-specific search terms', () => {
+  it('does not duplicate preferred seller search terms', () => {
     expect(buildNaverShoppingSearchTerms('증식의 G 카드스퀘어')).toEqual([
       '증식의 G 카드스퀘어',
-      '증식의 G 카드스퀘어 카드냥'
+      '증식의 G 카드스퀘어 카드냥',
+      '증식의 G 카드스퀘어 TCG마트'
     ]);
     expect(buildNaverShoppingSearchTerms('증식의 G 유희왕STORE')).toEqual([
       '증식의 G 유희왕STORE',
-      '증식의 G 유희왕STORE 카드냥'
+      '증식의 G 유희왕STORE 카드냥',
+      '증식의 G 유희왕STORE TCG마트'
     ]);
     expect(buildNaverShoppingSearchTerms('증식의 G 카드냥')).toEqual([
       '증식의 G 카드냥',
-      '증식의 G 카드냥 카드스퀘어'
+      '증식의 G 카드냥 카드스퀘어',
+      '증식의 G 카드냥 TCG마트'
+    ]);
+    expect(buildNaverShoppingSearchTerms('증식의 G TCG마트')).toEqual([
+      '증식의 G TCG마트',
+      '증식의 G TCG마트 카드스퀘어',
+      '증식의 G TCG마트 카드냥'
     ]);
   });
 
@@ -38,9 +47,11 @@ describe('naver shopping provider', () => {
       '체셔 캣',
       '체셔 캣 카드스퀘어',
       '체셔 캣 카드냥',
+      '체셔 캣 TCG마트',
       '체셔캣',
       '체셔캣 카드스퀘어',
-      '체셔캣 카드냥'
+      '체셔캣 카드냥',
+      '체셔캣 TCG마트'
     ]);
   });
 });

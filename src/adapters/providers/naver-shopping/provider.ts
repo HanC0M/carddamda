@@ -53,6 +53,9 @@ export function buildNaverShoppingSearchTerms(
     if (!/카드\s*냥|카드냥|card\s*nyang|cardnyang/i.test(term)) {
       terms.push(`${term} 카드냥`);
     }
+    if (!/tcg\s*마트|tcg마트|tcg\s*mart|tcgmart/i.test(term)) {
+      terms.push(`${term} TCG마트`);
+    }
   }
 
   return dedupeTerms(terms);
