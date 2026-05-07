@@ -15,6 +15,7 @@ const initialRows: PurchaseRequestRow[] = [];
 const DEFAULT_EXPANDED_RESULT_GROUPS = 3;
 
 type SessionState = 'idle' | 'searching' | 'results';
+type FeedbackType = 'bug' | 'shop' | 'feature' | 'other';
 
 function App() {
   const [rows, setRows] = useState<PurchaseRequestRow[]>(initialRows);
@@ -22,6 +23,7 @@ function App() {
   const [sessionState, setSessionState] = useState<SessionState>('idle');
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const validated = useMemo(() => validatePurchaseRows(rows), [rows]);
   const validRequests = useMemo(() => toValidPurchaseRequests(validated), [validated]);
@@ -158,6 +160,33 @@ function App() {
     }
   };
 
+  const submitFeedbackRequest = async (type: FeedbackType, content: string) => {
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, content })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Feedback submission failed with ${response.status}`);
+      }
+
+      const result = (await response.json()) as { storage?: string };
+      trackEvent('Feedback Submitted', {
+        type,
+        storage: result.storage ?? 'unknown'
+      });
+      return true;
+    } catch (error) {
+      trackEvent('Feedback Submission Failed', {
+        type,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+      return false;
+    }
+  };
+
   const updateRow = (id: string, patch: Partial<PurchaseRequestRow>) => {
     setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   };
@@ -208,17 +237,18 @@ function App() {
   return (
     <div className="sc-shell">
       <CommandRow
-        validCount={validRequests.length}
-        sessionState={sessionState}
-        onSearch={runSearch}
+        onOpenFeedback={() => setFeedbackOpen(true)}
       />
       <main className="sc-body">
         <SessionPanel
           rows={validated}
+          validCount={validRequests.length}
+          sessionState={sessionState}
           onAdd={addRow}
           onDelete={deleteRow}
           onUpdate={updateRow}
           onRowKeyDown={onRowKeyDown}
+          onSearch={runSearch}
         />
         <ResultsWorkspace
           groups={groups}
@@ -231,6 +261,11 @@ function App() {
           onToggleGroup={toggleGroup}
         />
       </main>
+      <FeedbackDialog
+        open={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+        onSubmit={submitFeedbackRequest}
+      />
     </div>
   );
 }
@@ -242,13 +277,9 @@ function buildDefaultCollapsedGroups(groups: SearchResultGroup[]) {
 }
 
 function CommandRow({
-  validCount,
-  sessionState,
-  onSearch
+  onOpenFeedback
 }: {
-  validCount: number;
-  sessionState: SessionState;
-  onSearch: () => void;
+  onOpenFeedback: () => void;
 }) {
   return (
     <header className="sc-cmd">
@@ -259,13 +290,8 @@ function CommandRow({
           <div className="sc-brand-sub">purchase session accelerator</div>
         </div>
       </div>
-      <button
-        className="sc-btn sc-btn-primary"
-        onClick={onSearch}
-        disabled={validCount === 0 || sessionState === 'searching'}
-      >
-        <IconSearch />
-        <span>{sessionState === 'searching' ? 'SEARCHING' : 'SEARCH'}</span>
+      <button className="sc-btn sc-btn-secondary" onClick={onOpenFeedback}>
+        건의 및 요청하기
       </button>
     </header>
   );
@@ -273,19 +299,23 @@ function CommandRow({
 
 function SessionPanel({
   rows,
+  validCount,
+  sessionState,
   onAdd,
   onDelete,
   onUpdate,
-  onRowKeyDown
+  onRowKeyDown,
+  onSearch
 }: {
   rows: ValidatedPurchaseRequestRow[];
+  validCount: number;
+  sessionState: SessionState;
   onAdd: () => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, patch: Partial<PurchaseRequestRow>) => void;
   onRowKeyDown: (event: React.KeyboardEvent<HTMLInputElement>, index: number, id: string) => void;
+  onSearch: () => void;
 }) {
-  const validCount = rows.filter((row) => row.issues.length === 0).length;
-
   return (
     <aside className="sc-panel">
       <div className="sc-panel-head">
@@ -312,6 +342,14 @@ function SessionPanel({
       ) : null}
       <button className="sc-add-row" onClick={onAdd}>
         <IconPlus /> 행 추가
+      </button>
+      <button
+        className="sc-btn sc-btn-primary sc-panel-search"
+        onClick={onSearch}
+        disabled={validCount === 0 || sessionState === 'searching'}
+      >
+        <IconSearch />
+        <span>{sessionState === 'searching' ? '검색 중' : '검색'}</span>
       </button>
     </aside>
   );
@@ -628,6 +666,89 @@ function EmptyGroup({
   );
 }
 
+function FeedbackDialog({
+  open,
+  onClose,
+  onSubmit
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (type: FeedbackType, content: string) => Promise<boolean>;
+}) {
+  const [type, setType] = useState<FeedbackType>('bug');
+  const [content, setContent] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const canSubmit = content.trim().length > 0 && content.trim().length <= 2000;
+
+  if (!open) return null;
+
+  const submit = async () => {
+    if (!canSubmit || submitting) return;
+
+    setSubmitting(true);
+    setMessage(null);
+    const ok = await onSubmit(type, content);
+    setSubmitting(false);
+
+    if (ok) {
+      setContent('');
+      setType('bug');
+      setMessage('건의가 접수되었습니다.');
+      window.setTimeout(onClose, 700);
+      return;
+    }
+
+    setMessage('접수에 실패했습니다. 잠시 후 다시 시도해주세요.');
+  };
+
+  return (
+    <div className="sc-feedback-overlay" role="presentation" onMouseDown={onClose}>
+      <section
+        className="sc-feedback-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feedback-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header className="sc-feedback-head">
+          <h2 id="feedback-title">건의 및 요청하기</h2>
+          <button onClick={onClose} aria-label="닫기">
+            <IconClose />
+          </button>
+        </header>
+        <div className="sc-feedback-form">
+          <label>
+            <span>건의 유형</span>
+            <select value={type} onChange={(event) => setType(event.target.value as FeedbackType)}>
+              <option value="bug">버그 제보</option>
+              <option value="shop">샵 추가 건의</option>
+              <option value="feature">기능 추가 건의</option>
+              <option value="other">기타</option>
+            </select>
+          </label>
+          <label>
+            <span>내용</span>
+            <textarea
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              placeholder="불편한 점이나 필요한 기능을 적어주세요."
+              maxLength={2000}
+              rows={7}
+            />
+          </label>
+          <div className="sc-feedback-foot">
+            {message ? <span>{message}</span> : <span>{content.trim().length}/2000</span>}
+            <button className="sc-btn sc-btn-primary" onClick={submit} disabled={!canSubmit || submitting}>
+              {submitting ? '보내는 중' : '보내기'}
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function LoadingRows() {
   return (
     <div className="sc-loading">
@@ -672,6 +793,10 @@ function IconChevron({ collapsed }: { collapsed: boolean }) {
       <path fill="currentColor" d="m4.5 6 3.5 3.5L11.5 6l-1.06-1.06L8 7.38 5.56 4.94z" />
     </svg>
   );
+}
+
+function IconClose() {
+  return <svg viewBox="0 0 16 16"><path fill="currentColor" d="m3.22 4.28 1.06-1.06L8 6.94l3.72-3.72 1.06 1.06L9.06 8l3.72 3.72-1.06 1.06L8 9.06l-3.72 3.72-1.06-1.06L6.94 8z" /></svg>;
 }
 
 createRoot(document.getElementById('root')!).render(<App />);

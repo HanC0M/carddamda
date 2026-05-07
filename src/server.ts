@@ -7,6 +7,11 @@ import {
   KeywordRuleStoreNotConfiguredError,
   submitKeywordRuleSuggestion
 } from './adapters/rules/supabaseKeywordRules.js';
+import {
+  FeedbackStoreNotConfiguredError,
+  submitFeedback,
+  type FeedbackType
+} from './adapters/feedback/supabaseFeedback.js';
 
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -48,6 +53,33 @@ app.post('/api/keyword-rules', async (req, res) => {
 
     console.error('keyword_rule_suggestion_failed', error);
     res.status(500).json({ error: 'Keyword rule suggestion failed' });
+  }
+});
+
+app.post('/api/feedback', async (req, res) => {
+  try {
+    const result = await submitFeedback(
+      {
+        type: String(req.body?.type ?? '') as FeedbackType,
+        content: String(req.body?.content ?? '')
+      },
+      process.env
+    );
+
+    if (!result) {
+      res.status(400).json({ error: 'Invalid feedback' });
+      return;
+    }
+
+    res.status(202).json({ ok: true, ...result });
+  } catch (error) {
+    if (error instanceof FeedbackStoreNotConfiguredError) {
+      res.status(202).json({ ok: true, id: null, storage: 'analytics-only' });
+      return;
+    }
+
+    console.error('feedback_submission_failed', error);
+    res.status(202).json({ ok: true, id: null, storage: 'analytics-only' });
   }
 });
 

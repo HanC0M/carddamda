@@ -39,7 +39,9 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -349,10 +351,32 @@ svg {
   cursor: not-allowed;
 }
 
+.sc-btn-secondary {
+  box-shadow: inset 0 0 0 1px var(--border-2);
+  background: transparent;
+  color: var(--text-2);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.sc-btn-secondary:hover {
+  box-shadow: inset 0 0 0 1px var(--border-3);
+  color: var(--text);
+}
+
 .sc-btn-pill {
   padding: 5px 12px;
   font-size: 10.5px;
   letter-spacing: 1.2px;
+}
+
+.sc-panel-search {
+  width: 100%;
+  justify-content: center;
+  margin-top: 12px;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .sc-results {
@@ -720,6 +744,113 @@ svg {
   font-weight: 700;
 }
 
+.sc-feedback-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.68);
+}
+
+.sc-feedback-sheet {
+  width: min(520px, 100%);
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: rgba(0, 0, 0, 0.5) 0 8px 24px;
+}
+
+.sc-feedback-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sc-feedback-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.sc-feedback-head button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--text-3);
+}
+
+.sc-feedback-head button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.sc-feedback-form {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.sc-feedback-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.sc-feedback-form label span {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sc-feedback-form select,
+.sc-feedback-form textarea {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  outline: 0;
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border-2);
+}
+
+.sc-feedback-form select {
+  padding: 10px 12px;
+}
+
+.sc-feedback-form textarea {
+  min-height: 150px;
+  resize: vertical;
+  padding: 12px;
+  line-height: 1.5;
+}
+
+.sc-feedback-form textarea::placeholder {
+  color: #5a5a5a;
+}
+
+.sc-feedback-form select:focus,
+.sc-feedback-form textarea:focus {
+  box-shadow: inset 0 0 0 1px var(--border-3);
+}
+
+.sc-feedback-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.sc-feedback-foot span {
+  color: var(--text-4);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .sc-idle {
   display: grid;
   place-items: center;
@@ -771,6 +902,18 @@ svg {
   .sc-results {
     max-height: none;
     padding: 16px;
+  }
+
+  .sc-feedback-overlay {
+    align-items: end;
+    padding: 0;
+  }
+
+  .sc-feedback-sheet {
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    border-radius: 14px 14px 0 0;
   }
 
   .sc-group-body {
