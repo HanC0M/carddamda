@@ -390,7 +390,7 @@ function AppFooter() {
   return (
     <footer className="sc-footer">
       <div className="sc-footer-meta">
-        <span>개발자 한규언</span>
+        <span>개발자 기멘무 (@gimenmu)</span>
         <a
           href="mailto:duelmatch2026@gmail.com"
           onClick={() => trackEvent('Developer Contact Clicked')}
