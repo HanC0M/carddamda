@@ -44,19 +44,23 @@ export default async function handler(req: VercelRequestLike, res: VercelRespons
     res.status(202).json({ ok: true, ...result });
   } catch (error) {
     if (error instanceof KeywordRuleStoreNotConfiguredError) {
-      res.status(202).json({
-        ok: true,
-        id: null,
-        status: 'pending',
-        duplicate: false,
-        storage: 'analytics-only'
-      });
+      res.status(202).json(buildAnalyticsOnlySuggestionResponse());
       return;
     }
 
     console.error('keyword_rule_suggestion_failed', error);
-    res.status(500).json({ error: 'Keyword rule suggestion failed' });
+    res.status(202).json(buildAnalyticsOnlySuggestionResponse());
   }
+}
+
+function buildAnalyticsOnlySuggestionResponse() {
+  return {
+    ok: true,
+    id: null,
+    status: 'pending',
+    duplicate: false,
+    storage: 'analytics-only'
+  };
 }
 
 function parseBody(body: unknown): unknown {
