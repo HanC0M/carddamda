@@ -291,6 +291,7 @@ function App() {
           onOutboundClick={trackOutboundClick}
         />
       </main>
+      <AppFooter />
       <FeedbackDialog
         open={feedbackOpen}
         onClose={closeFeedback}
@@ -381,7 +382,23 @@ function SessionPanel({
         <IconSearch />
         <span>{sessionState === 'searching' ? '검색 중' : '검색'}</span>
       </button>
-      <nav className="sc-legal-links" aria-label="서비스 문서">
+    </aside>
+  );
+}
+
+function AppFooter() {
+  return (
+    <footer className="sc-footer">
+      <div className="sc-footer-meta">
+        <span>개발자 한규언</span>
+        <a
+          href="mailto:duelmatch2026@gmail.com"
+          onClick={() => trackEvent('Developer Contact Clicked')}
+        >
+          duelmatch2026@gmail.com
+        </a>
+      </div>
+      <nav className="sc-footer-links" aria-label="서비스 문서">
         <a
           href="/terms.html"
           target="_blank"
@@ -399,7 +416,7 @@ function SessionPanel({
           개인정보 처리방침
         </a>
       </nav>
-    </aside>
+    </footer>
   );
 }
 
