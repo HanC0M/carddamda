@@ -7,4 +7,4 @@
 - [x] Wire approved global rules into search.
 - [x] Add tests and run verification.
 - [x] Configure Mixpanel token in Vercel.
-- [ ] Record release review verdict.
+- [x] Record release review verdict.
