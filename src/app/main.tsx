@@ -575,7 +575,7 @@ function EmptyGroup({
 
     if (ok) {
       setTargetKeyword('');
-      setSubmitMessage('접수됐습니다. 확인 후 전체 검색에 반영됩니다.');
+      setSubmitMessage('검색 개선에 함께 해주셔서 감사합니다.');
       return;
     }
 
@@ -607,7 +607,7 @@ function EmptyGroup({
               <input
                 value={targetKeyword}
                 onChange={(event) => setTargetKeyword(event.target.value)}
-                placeholder="예: 체셔캣"
+                placeholder="카드명을 가능한 정확하게 입력해주세요."
               />
             </label>
             <button onClick={saveRule} disabled={!canSubmit || isSubmitting}>
