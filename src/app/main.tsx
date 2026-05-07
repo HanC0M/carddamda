@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { SearchResultGroup } from '../domain/search/types';
+import type { ValidKeywordSearchRule } from '../domain/search/keywordRules';
 import {
   createPurchaseRequestRow,
   toValidPurchaseRequests,
@@ -8,6 +9,8 @@ import {
   type PurchaseRequestRow,
   type ValidatedPurchaseRequestRow
 } from '../domain/session/validation';
+import { trackEvent } from './analytics';
+import { loadKeywordRules, saveKeywordRules, upsertKeywordRule } from './keywordRuleStorage';
 import './styles.css';
 
 const initialRows: PurchaseRequestRow[] = [];
@@ -21,6 +24,9 @@ function App() {
   const [sessionState, setSessionState] = useState<SessionState>('idle');
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
+  const [keywordRules, setKeywordRules] = useState<ValidKeywordSearchRule[]>(() =>
+    typeof window === 'undefined' ? [] : loadKeywordRules()
+  );
 
   const validated = useMemo(() => validatePurchaseRows(rows), [rows]);
   const validRequests = useMemo(() => toValidPurchaseRequests(validated), [validated]);
@@ -35,7 +41,7 @@ function App() {
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: validRequests })
+        body: JSON.stringify({ requests: validRequests, keywordRules })
       });
 
       if (!response.ok) {
@@ -46,6 +52,11 @@ function App() {
       setGroups(data.groups);
       setCollapsedGroups(buildDefaultCollapsedGroups(data.groups));
       setSessionState('results');
+      trackEvent('Search Completed', {
+        requestCount: validRequests.length,
+        keywordRuleCount: keywordRules.length,
+        emptyGroupCount: data.groups.filter((group) => group.status === 'empty').length
+      });
     } catch (error) {
       setSessionError(error instanceof Error ? error.message : '검색 요청에 실패했습니다.');
       setGroups(
@@ -63,6 +74,7 @@ function App() {
         new Set(validRequests.slice(DEFAULT_EXPANDED_RESULT_GROUPS).map((request) => request.id))
       );
       setSessionState('results');
+      trackEvent('Search Failed', { requestCount: validRequests.length });
     }
   };
 
@@ -78,7 +90,10 @@ function App() {
     });
   };
 
-  const retryGroup = async (requestId: string) => {
+  const retryGroup = async (
+    requestId: string,
+    keywordRulesOverride: ValidKeywordSearchRule[] = keywordRules
+  ) => {
     const request = validRequests.find((item) => item.id === requestId);
     if (!request) return;
 
@@ -92,7 +107,7 @@ function App() {
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: [request] })
+        body: JSON.stringify({ requests: [request], keywordRules: keywordRulesOverride })
       });
 
       if (!response.ok) throw new Error(`Retry failed with ${response.status}`);
@@ -102,6 +117,11 @@ function App() {
       setGroups((current) =>
         current.map((group) => (group.requestId === requestId ? nextGroup : group))
       );
+      trackEvent('Result Group Retried', {
+        searchTerm: request.searchTerm,
+        resultCount: nextGroup.results.length,
+        status: nextGroup.status
+      });
     } catch (error) {
       setGroups((current) =>
         current.map((group) =>
@@ -115,6 +135,20 @@ function App() {
         )
       );
     }
+  };
+
+  const addKeywordRule = (sourceKeyword: string, targetKeyword: string) => {
+    const nextRules = upsertKeywordRule(keywordRules, { sourceKeyword, targetKeyword });
+    if (nextRules === keywordRules) return null;
+
+    setKeywordRules(nextRules);
+    saveKeywordRules(nextRules);
+    trackEvent('Keyword Rule Added', {
+      sourceKeyword: nextRules[0]?.sourceKeyword ?? null,
+      targetKeyword: nextRules[0]?.targetKeyword ?? null,
+      keywordRuleCount: nextRules.length
+    });
+    return nextRules;
   };
 
   const updateRow = (id: string, patch: Partial<PurchaseRequestRow>) => {
@@ -185,6 +219,7 @@ function App() {
           sessionState={sessionState}
           sessionError={sessionError}
           onRetry={retryGroup}
+          onAddKeywordRule={addKeywordRule}
           collapsedGroups={collapsedGroups}
           onToggleGroup={toggleGroup}
         />
@@ -330,6 +365,7 @@ function ResultsWorkspace({
   sessionState,
   sessionError,
   onRetry,
+  onAddKeywordRule,
   collapsedGroups,
   onToggleGroup
 }: {
@@ -337,7 +373,11 @@ function ResultsWorkspace({
   rows: ValidatedPurchaseRequestRow[];
   sessionState: SessionState;
   sessionError: string | null;
-  onRetry: (requestId: string) => void;
+  onRetry: (requestId: string, keywordRulesOverride?: ValidKeywordSearchRule[]) => void;
+  onAddKeywordRule: (
+    sourceKeyword: string,
+    targetKeyword: string
+  ) => ValidKeywordSearchRule[] | null;
   collapsedGroups: Set<string>;
   onToggleGroup: (requestId: string) => void;
 }) {
@@ -375,6 +415,7 @@ function ResultsWorkspace({
                 errorMessage: null
               }}
               onRetry={onRetry}
+              onAddKeywordRule={onAddKeywordRule}
               collapsed={false}
               onToggle={onToggleGroup}
             />
@@ -384,6 +425,7 @@ function ResultsWorkspace({
               key={group.requestId}
               group={group}
               onRetry={onRetry}
+              onAddKeywordRule={onAddKeywordRule}
               collapsed={collapsedGroups.has(group.requestId)}
               onToggle={onToggleGroup}
             />
@@ -395,11 +437,16 @@ function ResultsWorkspace({
 function ResultGroup({
   group,
   onRetry,
+  onAddKeywordRule,
   collapsed,
   onToggle
 }: {
   group: SearchResultGroup;
-  onRetry: (requestId: string) => void;
+  onRetry: (requestId: string, keywordRulesOverride?: ValidKeywordSearchRule[]) => void;
+  onAddKeywordRule: (
+    sourceKeyword: string,
+    targetKeyword: string
+  ) => ValidKeywordSearchRule[] | null;
   collapsed: boolean;
   onToggle: (requestId: string) => void;
 }) {
@@ -441,10 +488,21 @@ function ResultGroup({
           ? group.results.map((result) => <ProductRow key={result.productId} result={result} />)
           : null}
         {group.status === 'empty' ? (
-          <EmptyGroup group={group} message={`"${group.searchTerm}" 결과가 없습니다`} />
+          <EmptyGroup
+            group={group}
+            message={`"${group.searchTerm}" 결과가 없습니다`}
+            onAddKeywordRule={onAddKeywordRule}
+            onRetry={onRetry}
+          />
         ) : null}
         {group.status === 'failed' ? (
-          <EmptyGroup group={group} message={group.errorMessage ?? '검색 중 오류가 발생했습니다'} error />
+          <EmptyGroup
+            group={group}
+            message={group.errorMessage ?? '검색 중 오류가 발생했습니다'}
+            onAddKeywordRule={onAddKeywordRule}
+            onRetry={onRetry}
+            error
+          />
         ) : null}
       </div>
     </article>
@@ -477,20 +535,79 @@ function ProductRow({ result }: { result: SearchResultGroup['results'][number] }
 function EmptyGroup({
   group,
   message,
+  onAddKeywordRule,
+  onRetry,
   error = false
 }: {
   group: SearchResultGroup;
   message: string;
+  onAddKeywordRule: (
+    sourceKeyword: string,
+    targetKeyword: string
+  ) => ValidKeywordSearchRule[] | null;
+  onRetry: (requestId: string, keywordRulesOverride?: ValidKeywordSearchRule[]) => void;
   error?: boolean;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [sourceKeyword, setSourceKeyword] = useState(group.searchTerm);
+  const [targetKeyword, setTargetKeyword] = useState('');
+  const canSubmit =
+    sourceKeyword.trim().length > 0 &&
+    targetKeyword.trim().length > 0 &&
+    sourceKeyword.trim() !== targetKeyword.trim();
+
+  const saveRule = () => {
+    if (!canSubmit) return;
+
+    const nextRules = onAddKeywordRule(sourceKeyword, targetKeyword);
+    if (!nextRules) return;
+
+    setIsOpen(false);
+    setTargetKeyword('');
+    onRetry(group.requestId, nextRules);
+  };
+
   return (
     <div className={error ? 'sc-error' : 'sc-empty'}>
-      <span>{message}</span>
-      {group.auxiliaryActions.map((action) => (
-        <a key={action.id} href={action.externalUrl} target="_blank" rel="noreferrer">
-          {action.label}
-        </a>
-      ))}
+      <div className="sc-empty-main">
+        <span>{message}</span>
+        {!error ? (
+          <button className="sc-empty-help" onClick={() => setIsOpen((value) => !value)}>
+            검색 결과가 나타나지 않나요?
+          </button>
+        ) : null}
+        {isOpen ? (
+          <div className="sc-keyword-rule">
+            <p>다른 이름으로 등록된 카드라면 함께 검색할 키워드를 알려주세요.</p>
+            <label>
+              <span>찾고 싶은 키워드</span>
+              <input
+                value={sourceKeyword}
+                onChange={(event) => setSourceKeyword(event.target.value)}
+                placeholder="예: 체셔 캣"
+              />
+            </label>
+            <label>
+              <span>같이 검색할 키워드</span>
+              <input
+                value={targetKeyword}
+                onChange={(event) => setTargetKeyword(event.target.value)}
+                placeholder="예: 체셔캣"
+              />
+            </label>
+            <button onClick={saveRule} disabled={!canSubmit}>
+              저장하고 다시 검색
+            </button>
+          </div>
+        ) : null}
+      </div>
+      <div className="sc-empty-actions">
+        {group.auxiliaryActions.map((action) => (
+          <a key={action.id} href={action.externalUrl} target="_blank" rel="noreferrer">
+            {action.label}
+          </a>
+        ))}
+      </div>
     </div>
   );
 }

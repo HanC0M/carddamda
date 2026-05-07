@@ -1,4 +1,8 @@
 import type { NormalizedProductResult } from '../../../domain/search/types';
+import {
+  buildExpandedSearchTerms,
+  type ValidKeywordSearchRule
+} from '../../../domain/search/keywordRules';
 import { searchNaverShopping } from './client';
 import { filterPreferredStoreResults, normalizeNaverShoppingItems } from './normalizer';
 
@@ -10,7 +14,8 @@ export type NaverShoppingProviderConfig = {
 
 export async function searchNaverShoppingProvider(
   searchTerm: string,
-  config: NaverShoppingProviderConfig
+  config: NaverShoppingProviderConfig,
+  keywordRules: ValidKeywordSearchRule[] = []
 ): Promise<NormalizedProductResult[]> {
   if (!config.clientId || !config.clientSecret) {
     throw new Error('Naver API credentials are not configured.');
@@ -19,7 +24,7 @@ export async function searchNaverShoppingProvider(
   const clientId = config.clientId;
   const clientSecret = config.clientSecret;
   const responses = await Promise.all(
-    buildNaverShoppingSearchTerms(searchTerm).map((query) =>
+    buildNaverShoppingSearchTerms(searchTerm, keywordRules).map((query) =>
       searchNaverShopping(query, {
         clientId,
         clientSecret,
@@ -33,14 +38,33 @@ export async function searchNaverShoppingProvider(
   );
 }
 
-export function buildNaverShoppingSearchTerms(searchTerm: string): string[] {
-  const trimmed = searchTerm.trim();
-  if (!trimmed) return [];
+export function buildNaverShoppingSearchTerms(
+  searchTerm: string,
+  keywordRules: ValidKeywordSearchRule[] = []
+): string[] {
+  const expandedTerms = buildExpandedSearchTerms(searchTerm, keywordRules);
+  const terms: string[] = [];
 
-  const terms = [trimmed];
-  if (!/카드\s*스퀘어|카드스퀘어|유희왕\s*store|유희왕스토어|yugioh\s*store|yugiohstore/i.test(trimmed)) {
-    terms.push(`${trimmed} 카드스퀘어`);
+  for (const term of expandedTerms) {
+    terms.push(term);
+    if (!/카드\s*스퀘어|카드스퀘어|유희왕\s*store|유희왕스토어|yugioh\s*store|yugiohstore/i.test(term)) {
+      terms.push(`${term} 카드스퀘어`);
+    }
   }
 
-  return terms;
+  return dedupeTerms(terms);
+}
+
+function dedupeTerms(terms: string[]): string[] {
+  const seen = new Set<string>();
+  const deduped: string[] = [];
+
+  for (const term of terms) {
+    const key = term.toLocaleLowerCase('ko-KR');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(term);
+  }
+
+  return deduped;
 }

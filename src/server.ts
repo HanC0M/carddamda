@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildSearchSessionResponse } from './api/searchSession';
+import { buildSearchSessionResponseWithRules } from './api/searchSession';
 
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -17,7 +17,13 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.post('/api/search', async (req, res) => {
-  res.json(await buildSearchSessionResponse(req.body?.requests, process.env));
+  res.json(
+    await buildSearchSessionResponseWithRules(
+      req.body?.requests,
+      req.body?.keywordRules,
+      process.env
+    )
+  );
 });
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));

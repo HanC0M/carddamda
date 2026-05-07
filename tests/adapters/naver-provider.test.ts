@@ -13,4 +13,16 @@ describe('naver shopping provider', () => {
     expect(buildNaverShoppingSearchTerms('증식의 G 카드스퀘어')).toEqual(['증식의 G 카드스퀘어']);
     expect(buildNaverShoppingSearchTerms('증식의 G 유희왕STORE')).toEqual(['증식의 G 유희왕STORE']);
   });
+
+  it('adds user-provided companion keywords before provider-specific expansion', () => {
+    expect(
+      buildNaverShoppingSearchTerms('체셔 캣', [
+        {
+          id: 'cheshire',
+          sourceKeyword: '체셔 캣',
+          targetKeyword: '체셔캣'
+        }
+      ])
+    ).toEqual(['체셔 캣', '체셔 캣 카드스퀘어', '체셔캣', '체셔캣 카드스퀘어']);
+  });
 });

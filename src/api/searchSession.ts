@@ -1,5 +1,6 @@
 import type { PurchaseRequestInput } from '../domain/search/types';
 import { buildSearchResultGroup } from '../domain/search/groupResults';
+import { toValidKeywordSearchRules } from '../domain/search/keywordRules';
 import {
   createPurchaseRequestRow,
   toValidPurchaseRequests,
@@ -13,18 +14,31 @@ export type SearchSessionEnv = {
 };
 
 export async function buildSearchSessionResponse(requests: unknown, env: SearchSessionEnv) {
+  return buildSearchSessionResponseWithRules(requests, undefined, env);
+}
+
+export async function buildSearchSessionResponseWithRules(
+  requests: unknown,
+  keywordRules: unknown,
+  env: SearchSessionEnv
+) {
   const rows = parseRequestRows(requests);
   const validated = validatePurchaseRows(rows);
   const validRequests = toValidPurchaseRequests(validated);
+  const validKeywordRules = toValidKeywordSearchRules(keywordRules);
 
   const groups = await Promise.all(
     validRequests.map(async (request) => {
       try {
-        const results = await searchNaverShoppingProvider(request.searchTerm, {
-          clientId: env.NAVER_CLIENT_ID,
-          clientSecret: env.NAVER_CLIENT_SECRET,
-          display: 40
-        });
+        const results = await searchNaverShoppingProvider(
+          request.searchTerm,
+          {
+            clientId: env.NAVER_CLIENT_ID,
+            clientSecret: env.NAVER_CLIENT_SECRET,
+            display: 40
+          },
+          validKeywordRules
+        );
 
         return buildSearchResultGroup(request, { ok: true, results });
       } catch (error) {

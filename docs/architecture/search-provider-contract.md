@@ -28,6 +28,7 @@ Recommended initial API defaults:
 - `exclude=used:rental:cbshop`
 - `display=40` per search term for V1
 - Query each requested card with the raw search term and a CardSquare-biased search term, `"{searchTerm} 카드스퀘어"`, unless the user already included a CardSquare/Yugioh Store seller term.
+- If users report that a missing result is listed under another keyword, accept a local companion-keyword rule such as `"체셔 캣" should also search `"체셔캣"`. Apply those rules before provider-specific expansion.
 
 These defaults can change after real purchase-session testing, but the normalized result contract should remain stable.
 
@@ -168,6 +169,24 @@ Map Naver Shopping API fields as follows:
 
 After this mapping, filter out any result that is not CardKingdom, 카드스퀘어, or TCGShop via Naver.
 
+### Companion Keyword Rules
+
+When a requested card returns no results, the UI can collect a user-provided rule:
+
+```ts
+type KeywordSearchRule = {
+  sourceKeyword: string;
+  targetKeyword: string;
+};
+```
+
+Rules:
+
+- Store these rules in the browser for V1. They are session acceleration hints, not canonical product data.
+- Apply rules only by exact normalized source keyword match.
+- If a user says `AA` should search with `BB`, the provider should query both `AA` and `BB`, then apply normal provider-specific expansion such as CardSquare-biased terms.
+- Keep rule parsing and expansion in domain code, not UI components.
+
 TCGShop detection should use conservative matching:
 
 - `mallName` includes `TCGShop` or `tcgshop`
@@ -192,6 +211,23 @@ Rules:
 - Partial provider failure should be visible but should not hide successful results.
 - The user should always know which requested card a result belongs to.
 
+## Analytics
+
+V1 uses Mixpanel only from the browser and only when `VITE_MIXPANEL_TOKEN` is configured.
+
+Tracked events:
+
+- `Search Completed`: request count, keyword rule count, and empty group count.
+- `Search Failed`: request count.
+- `Result Group Retried`: search term, result count, and final status.
+- `Keyword Rule Added`: source keyword, target keyword, and saved rule count.
+
+Rules:
+
+- Do not send API keys or provider credentials to analytics.
+- Keep analytics optional. The app must run normally without a Mixpanel token.
+- Do not track raw product links or secret environment variables.
+
 ## Testing Requirements
 
 Provider changes require fast tests before UI or E2E tests.
@@ -208,6 +244,7 @@ Required coverage:
 - exclusion of general Naver catalog results and unrelated smart stores
 - direct TCGShop auxiliary action generation
 - group status for success, empty, partial failure, and failed searches
+- companion keyword rule validation and search-term expansion
 
 Fixtures should live under `fixtures/` once implementation begins.
 

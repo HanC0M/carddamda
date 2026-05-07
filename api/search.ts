@@ -1,4 +1,4 @@
-import { buildSearchSessionResponse } from '../src/api/searchSession';
+import { buildSearchSessionResponseWithRules } from '../src/api/searchSession';
 
 type VercelRequestLike = {
   method?: string;
@@ -20,7 +20,8 @@ export default async function handler(req: VercelRequestLike, res: VercelRespons
 
   const body = parseBody(req.body);
   const requests = isRecord(body) ? body.requests : undefined;
-  const payload = await buildSearchSessionResponse(requests, process.env);
+  const keywordRules = isRecord(body) ? body.keywordRules : undefined;
+  const payload = await buildSearchSessionResponseWithRules(requests, keywordRules, process.env);
 
   res.status(200).json(payload);
 }
