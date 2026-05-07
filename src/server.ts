@@ -12,6 +12,10 @@ import {
   submitFeedback,
   type FeedbackType
 } from './adapters/feedback/supabaseFeedback.js';
+import {
+  AnalyticsStoreNotConfiguredError,
+  submitAnalyticsEvent
+} from './adapters/analytics/mixpanelServer.js';
 
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -80,6 +84,36 @@ app.post('/api/feedback', async (req, res) => {
 
     console.error('feedback_submission_failed', error);
     res.status(202).json({ ok: true, id: null, storage: 'analytics-only' });
+  }
+});
+
+app.post('/api/analytics', async (req, res) => {
+  try {
+    const result = await submitAnalyticsEvent(
+      {
+        event: String(req.body?.event ?? ''),
+        properties:
+          typeof req.body?.properties === 'object' && req.body.properties !== null
+            ? req.body.properties
+            : {}
+      },
+      process.env
+    );
+
+    if (!result) {
+      res.status(400).json({ error: 'Invalid analytics event' });
+      return;
+    }
+
+    res.status(202).json({ ok: true, ...result });
+  } catch (error) {
+    if (error instanceof AnalyticsStoreNotConfiguredError) {
+      res.status(202).json({ ok: true, storage: 'not-configured' });
+      return;
+    }
+
+    console.error('analytics_submission_failed', error);
+    res.status(202).json({ ok: true, storage: 'failed-open' });
   }
 });
 
