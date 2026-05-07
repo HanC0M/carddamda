@@ -21,3 +21,8 @@ alter table public.keyword_rule_suggestions enable row level security;
 
 -- Carddamda reads/writes this table only through server-side Vercel functions
 -- using SUPABASE_SERVICE_ROLE_KEY. Do not expose the service role key in the browser.
+
+-- Until Supabase is configured, the app accepts suggestions as analytics-only
+-- pending submissions and records them through the client Mixpanel event
+-- `Keyword Rule Suggested`. To manually approve a rule before Supabase exists,
+-- add it to `src/domain/search/staticApprovedKeywordRules.ts` and deploy.

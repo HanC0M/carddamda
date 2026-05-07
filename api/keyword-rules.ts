@@ -44,7 +44,13 @@ export default async function handler(req: VercelRequestLike, res: VercelRespons
     res.status(202).json({ ok: true, ...result });
   } catch (error) {
     if (error instanceof KeywordRuleStoreNotConfiguredError) {
-      res.status(503).json({ error: 'Keyword rule store is not configured' });
+      res.status(202).json({
+        ok: true,
+        id: null,
+        status: 'pending',
+        duplicate: false,
+        storage: 'analytics-only'
+      });
       return;
     }
 

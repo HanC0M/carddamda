@@ -10,6 +10,7 @@ import {
   loadApprovedKeywordRules,
   type KeywordRuleStoreEnv
 } from '../adapters/rules/supabaseKeywordRules.js';
+import { loadStaticApprovedKeywordRules } from '../domain/search/staticApprovedKeywordRules.js';
 
 export type SearchSessionEnv = KeywordRuleStoreEnv & {
   NAVER_CLIENT_ID?: string;
@@ -50,10 +51,10 @@ export async function buildSearchSessionResponse(requests: unknown, env: SearchS
 
 async function safeLoadApprovedKeywordRules(env: SearchSessionEnv) {
   try {
-    return await loadApprovedKeywordRules(env);
+    return [...loadStaticApprovedKeywordRules(), ...(await loadApprovedKeywordRules(env))];
   } catch (error) {
     console.error('approved_keyword_rules_load_failed', error);
-    return [];
+    return loadStaticApprovedKeywordRules();
   }
 }
 
