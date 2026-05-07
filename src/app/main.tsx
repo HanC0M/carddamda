@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { SearchResultGroup } from '../domain/search/types.js';
 import {
@@ -28,11 +28,19 @@ function App() {
   const validated = useMemo(() => validatePurchaseRows(rows), [rows]);
   const validRequests = useMemo(() => toValidPurchaseRequests(validated), [validated]);
 
+  useEffect(() => {
+    trackEvent('App Opened');
+  }, []);
+
   const runSearch = async () => {
     if (validRequests.length === 0) return;
 
     setSessionState('searching');
     setSessionError(null);
+    trackEvent('Search Started', {
+      requestCount: validRequests.length,
+      totalQuantity: validRequests.reduce((sum, request) => sum + request.quantity, 0)
+    });
 
     try {
       const response = await fetch('/api/search', {
@@ -82,6 +90,10 @@ function App() {
       } else {
         next.add(requestId);
       }
+      trackEvent('Result Group Toggled', {
+        requestId,
+        collapsed: next.has(requestId)
+      });
       return next;
     });
   };
@@ -193,14 +205,33 @@ function App() {
 
   const deleteRow = (id: string) => {
     setRows((current) => current.filter((row) => row.id !== id));
+    trackEvent('Purchase Row Deleted', { rowCount: Math.max(rows.length - 1, 0) });
   };
 
   const addRow = () => {
     const next = createPurchaseRequestRow();
     setRows((current) => [...current, next]);
+    trackEvent('Purchase Row Added', { rowCount: rows.length + 1 });
     window.setTimeout(() => {
       document.querySelector<HTMLInputElement>(`[data-row="${next.id}"] input[name="searchTerm"]`)?.focus();
     }, 20);
+  };
+
+  const openFeedback = () => {
+    setFeedbackOpen(true);
+    trackEvent('Feedback Opened');
+  };
+
+  const closeFeedback = () => {
+    setFeedbackOpen(false);
+    trackEvent('Feedback Closed');
+  };
+
+  const trackOutboundClick = (kind: string, merchantName?: string) => {
+    trackEvent('Outbound Link Clicked', {
+      kind,
+      merchantName: merchantName ?? null
+    });
   };
 
   const onRowKeyDown = (
@@ -236,9 +267,7 @@ function App() {
 
   return (
     <div className="sc-shell">
-      <CommandRow
-        onOpenFeedback={() => setFeedbackOpen(true)}
-      />
+      <CommandRow onOpenFeedback={openFeedback} />
       <main className="sc-body">
         <SessionPanel
           rows={validated}
@@ -259,11 +288,12 @@ function App() {
           onSuggestKeywordRule={suggestKeywordRule}
           collapsedGroups={collapsedGroups}
           onToggleGroup={toggleGroup}
+          onOutboundClick={trackOutboundClick}
         />
       </main>
       <FeedbackDialog
         open={feedbackOpen}
-        onClose={() => setFeedbackOpen(false)}
+        onClose={closeFeedback}
         onSubmit={submitFeedbackRequest}
       />
     </div>
@@ -351,6 +381,24 @@ function SessionPanel({
         <IconSearch />
         <span>{sessionState === 'searching' ? '검색 중' : '검색'}</span>
       </button>
+      <nav className="sc-legal-links" aria-label="서비스 문서">
+        <a
+          href="/terms.html"
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => trackEvent('Legal Link Clicked', { document: 'terms' })}
+        >
+          이용약관
+        </a>
+        <a
+          href="/privacy.html"
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => trackEvent('Legal Link Clicked', { document: 'privacy' })}
+        >
+          개인정보 처리방침
+        </a>
+      </nav>
     </aside>
   );
 }
@@ -412,7 +460,8 @@ function ResultsWorkspace({
   onRetry,
   onSuggestKeywordRule,
   collapsedGroups,
-  onToggleGroup
+  onToggleGroup,
+  onOutboundClick
 }: {
   groups: SearchResultGroup[];
   rows: ValidatedPurchaseRequestRow[];
@@ -425,6 +474,7 @@ function ResultsWorkspace({
   ) => Promise<boolean>;
   collapsedGroups: Set<string>;
   onToggleGroup: (requestId: string) => void;
+  onOutboundClick: (kind: string, merchantName?: string) => void;
 }) {
   if (sessionState === 'idle') {
     return (
@@ -463,6 +513,7 @@ function ResultsWorkspace({
               onSuggestKeywordRule={onSuggestKeywordRule}
               collapsed={false}
               onToggle={onToggleGroup}
+              onOutboundClick={onOutboundClick}
             />
           ))
         : groups.map((group) => (
@@ -473,6 +524,7 @@ function ResultsWorkspace({
               onSuggestKeywordRule={onSuggestKeywordRule}
               collapsed={collapsedGroups.has(group.requestId)}
               onToggle={onToggleGroup}
+              onOutboundClick={onOutboundClick}
             />
           ))}
     </section>
@@ -484,7 +536,8 @@ function ResultGroup({
   onRetry,
   onSuggestKeywordRule,
   collapsed,
-  onToggle
+  onToggle,
+  onOutboundClick
 }: {
   group: SearchResultGroup;
   onRetry: (requestId: string) => void;
@@ -494,6 +547,7 @@ function ResultGroup({
   ) => Promise<boolean>;
   collapsed: boolean;
   onToggle: (requestId: string) => void;
+  onOutboundClick: (kind: string, merchantName?: string) => void;
 }) {
   const statusLabel = {
     idle: '대기',
@@ -530,7 +584,13 @@ function ResultGroup({
       <div className="sc-group-body" hidden={collapsed}>
         {group.status === 'loading' ? <LoadingRows /> : null}
         {group.status === 'success' || group.status === 'partial'
-          ? group.results.map((result) => <ProductRow key={result.productId} result={result} />)
+          ? group.results.map((result) => (
+              <ProductRow
+                key={result.productId}
+                result={result}
+                onOutboundClick={onOutboundClick}
+              />
+            ))
           : null}
         {group.status === 'empty' ? (
           <EmptyGroup
@@ -538,6 +598,7 @@ function ResultGroup({
             message={`"${group.searchTerm}" 결과가 없습니다`}
             onSuggestKeywordRule={onSuggestKeywordRule}
             onRetry={onRetry}
+            onOutboundClick={onOutboundClick}
           />
         ) : null}
         {group.status === 'failed' ? (
@@ -546,6 +607,7 @@ function ResultGroup({
             message={group.errorMessage ?? '검색 중 오류가 발생했습니다'}
             onSuggestKeywordRule={onSuggestKeywordRule}
             onRetry={onRetry}
+            onOutboundClick={onOutboundClick}
             error
           />
         ) : null}
@@ -554,7 +616,13 @@ function ResultGroup({
   );
 }
 
-function ProductRow({ result }: { result: SearchResultGroup['results'][number] }) {
+function ProductRow({
+  result,
+  onOutboundClick
+}: {
+  result: SearchResultGroup['results'][number];
+  onOutboundClick: (kind: string, merchantName?: string) => void;
+}) {
   return (
     <div className="sc-prod">
       <div className="sc-prod-thumb" aria-hidden="true">
@@ -562,7 +630,13 @@ function ProductRow({ result }: { result: SearchResultGroup['results'][number] }
       </div>
       <div className="sc-prod-body">
         <div className="sc-prod-name">{result.title}</div>
-        <a className="sc-offer" href={result.externalUrl} target="_blank" rel="noreferrer">
+        <a
+          className="sc-offer"
+          href={result.externalUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => onOutboundClick('product', result.merchantName)}
+        >
           <span className="sc-offer-store">
             {result.sourceTags.includes('tcgshop-via-naver') ? (
               <span className="sc-provider-badge">TCGShop</span>
@@ -582,6 +656,7 @@ function EmptyGroup({
   message,
   onSuggestKeywordRule,
   onRetry,
+  onOutboundClick,
   error = false
 }: {
   group: SearchResultGroup;
@@ -591,6 +666,7 @@ function EmptyGroup({
     targetKeyword: string
   ) => Promise<boolean>;
   onRetry: (requestId: string) => void;
+  onOutboundClick: (kind: string, merchantName?: string) => void;
   error?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -625,7 +701,14 @@ function EmptyGroup({
       <div className="sc-empty-main">
         <span>{message}</span>
         {!error ? (
-          <button className="sc-empty-help" onClick={() => setIsOpen((value) => !value)}>
+          <button
+            className="sc-empty-help"
+            onClick={() => {
+              const nextOpen = !isOpen;
+              setIsOpen(nextOpen);
+              trackEvent('Keyword Suggestion Form Toggled', { open: nextOpen });
+            }}
+          >
             검색 결과가 나타나지 않나요?
           </button>
         ) : null}
@@ -657,7 +740,13 @@ function EmptyGroup({
       </div>
       <div className="sc-empty-actions">
         {group.auxiliaryActions.map((action) => (
-          <a key={action.id} href={action.externalUrl} target="_blank" rel="noreferrer">
+          <a
+            key={action.id}
+            href={action.externalUrl}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => onOutboundClick('auxiliary-action')}
+          >
             {action.label}
           </a>
         ))}

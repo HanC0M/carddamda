@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://carddamda.vercel.app/sitemap.xml

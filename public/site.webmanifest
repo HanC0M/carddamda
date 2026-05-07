@@ -1,0 +1,17 @@
+{
+  "name": "카드담다",
+  "short_name": "카드담다",
+  "description": "TCG 구매 리스트 검색 도우미",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
