@@ -10,7 +10,7 @@ describe('naver shopping normalizer', () => {
   it('normalizes Naver API items and deduplicates by product ID', () => {
     const results = normalizeNaverShoppingItems((fixture as NaverShoppingApiResponse).items);
 
-    expect(results).toHaveLength(6);
+    expect(results).toHaveLength(7);
     expect(results[0]).toMatchObject({
       provider: 'naver-shopping',
       merchantName: '카드매니아',
@@ -30,7 +30,7 @@ describe('naver shopping normalizer', () => {
     expect(tcgshop?.sourceTags).toContain('tcgshop-via-naver');
   });
 
-  it('filters results to CardKingdom, Yugioh Store, and TCGShop only', () => {
+  it('filters results to preferred Smart Stores and TCGShop only', () => {
     const results = normalizeNaverShoppingItems((fixture as NaverShoppingApiResponse).items);
     const filtered = filterPreferredStoreResults(results);
 
@@ -39,7 +39,8 @@ describe('naver shopping normalizer', () => {
       '3003',
       '4004',
       '5005',
-      '6006'
+      '6006',
+      '7007'
     ]);
     expect(filtered.some((result) => result.merchantName === '카드매니아')).toBe(false);
   });
@@ -50,6 +51,7 @@ describe('naver shopping normalizer', () => {
     expect(results.find((result) => result.productId === '3003')?.merchantName).toBe('카드킹덤');
     expect(results.find((result) => result.productId === '4004')?.merchantName).toBe('카드스퀘어');
     expect(results.find((result) => result.productId === '6006')?.merchantName).toBe('카드스퀘어');
+    expect(results.find((result) => result.productId === '7007')?.merchantName).toBe('카드냥');
   });
 
   it('preserves Naver Shopping outbound links instead of guessing SmartStore slugs', () => {

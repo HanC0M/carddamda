@@ -50,6 +50,9 @@ export function buildNaverShoppingSearchTerms(
     if (!/카드\s*스퀘어|카드스퀘어|유희왕\s*store|유희왕스토어|yugioh\s*store|yugiohstore/i.test(term)) {
       terms.push(`${term} 카드스퀘어`);
     }
+    if (!/카드\s*냥|카드냥|card\s*nyang|cardnyang/i.test(term)) {
+      terms.push(`${term} 카드냥`);
+    }
   }
 
   return dedupeTerms(terms);
