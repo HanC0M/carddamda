@@ -1,4 +1,4 @@
-import type { PurchaseRequest } from '../search/types';
+import type { PurchaseRequest } from '../search/types.js';
 
 export type PurchaseRequestIssueType = 'empty-search-term' | 'invalid-quantity' | 'duplicate-search-term';
 

@@ -1,10 +1,10 @@
-import type { NormalizedProductResult } from '../../../domain/search/types';
+import type { NormalizedProductResult } from '../../../domain/search/types.js';
 import {
   buildExpandedSearchTerms,
   type ValidKeywordSearchRule
-} from '../../../domain/search/keywordRules';
-import { searchNaverShopping } from './client';
-import { filterPreferredStoreResults, normalizeNaverShoppingItems } from './normalizer';
+} from '../../../domain/search/keywordRules.js';
+import { searchNaverShopping } from './client.js';
+import { filterPreferredStoreResults, normalizeNaverShoppingItems } from './normalizer.js';
 
 export type NaverShoppingProviderConfig = {
   clientId?: string;

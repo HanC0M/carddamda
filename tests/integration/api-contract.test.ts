@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SearchResultGroup } from '../../src/domain/search/types';
+import type { SearchResultGroup } from '../../src/domain/search/types.js';
 
 describe('api response contract shape', () => {
   it('keeps grouped results tied to request identity', () => {

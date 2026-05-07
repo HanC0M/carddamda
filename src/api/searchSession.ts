@@ -1,31 +1,26 @@
-import type { PurchaseRequestInput } from '../domain/search/types';
-import { buildSearchResultGroup } from '../domain/search/groupResults';
-import { toValidKeywordSearchRules } from '../domain/search/keywordRules';
+import type { PurchaseRequestInput } from '../domain/search/types.js';
+import { buildSearchResultGroup } from '../domain/search/groupResults.js';
 import {
   createPurchaseRequestRow,
   toValidPurchaseRequests,
   validatePurchaseRows
-} from '../domain/session/validation';
-import { searchNaverShoppingProvider } from '../adapters/providers/naver-shopping/provider';
+} from '../domain/session/validation.js';
+import { searchNaverShoppingProvider } from '../adapters/providers/naver-shopping/provider.js';
+import {
+  loadApprovedKeywordRules,
+  type KeywordRuleStoreEnv
+} from '../adapters/rules/supabaseKeywordRules.js';
 
-export type SearchSessionEnv = {
+export type SearchSessionEnv = KeywordRuleStoreEnv & {
   NAVER_CLIENT_ID?: string;
   NAVER_CLIENT_SECRET?: string;
 };
 
 export async function buildSearchSessionResponse(requests: unknown, env: SearchSessionEnv) {
-  return buildSearchSessionResponseWithRules(requests, undefined, env);
-}
-
-export async function buildSearchSessionResponseWithRules(
-  requests: unknown,
-  keywordRules: unknown,
-  env: SearchSessionEnv
-) {
   const rows = parseRequestRows(requests);
   const validated = validatePurchaseRows(rows);
   const validRequests = toValidPurchaseRequests(validated);
-  const validKeywordRules = toValidKeywordSearchRules(keywordRules);
+  const approvedKeywordRules = await safeLoadApprovedKeywordRules(env);
 
   const groups = await Promise.all(
     validRequests.map(async (request) => {
@@ -37,7 +32,7 @@ export async function buildSearchSessionResponseWithRules(
             clientSecret: env.NAVER_CLIENT_SECRET,
             display: 40
           },
-          validKeywordRules
+          approvedKeywordRules
         );
 
         return buildSearchResultGroup(request, { ok: true, results });
@@ -51,6 +46,15 @@ export async function buildSearchSessionResponseWithRules(
   );
 
   return { validatedRows: validated, groups };
+}
+
+async function safeLoadApprovedKeywordRules(env: SearchSessionEnv) {
+  try {
+    return await loadApprovedKeywordRules(env);
+  } catch (error) {
+    console.error('approved_keyword_rules_load_failed', error);
+    return [];
+  }
 }
 
 function parseRequestRows(value: unknown) {

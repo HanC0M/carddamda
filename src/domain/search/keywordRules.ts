@@ -10,6 +10,27 @@ export type ValidKeywordSearchRule = {
   targetKeyword: string;
 };
 
+export type KeywordRuleSuggestion = {
+  sourceKeyword: string;
+  targetKeyword: string;
+  normalizedSource: string;
+  normalizedTarget: string;
+};
+
+export function normalizeKeywordRuleSuggestion(
+  rule: KeywordSearchRule
+): KeywordRuleSuggestion | null {
+  const normalized = normalizeKeywordRuleInput(rule);
+  if (!normalized) return null;
+
+  return {
+    sourceKeyword: normalized.sourceKeyword,
+    targetKeyword: normalized.targetKeyword,
+    normalizedSource: normalizeForRuleMatching(normalized.sourceKeyword),
+    normalizedTarget: normalizeForRuleMatching(normalized.targetKeyword)
+  };
+}
+
 export function normalizeKeywordRuleInput(rule: KeywordSearchRule): ValidKeywordSearchRule | null {
   const sourceKeyword = normalizeRuleTerm(rule.sourceKeyword);
   const targetKeyword = normalizeRuleTerm(rule.targetKeyword);
@@ -87,7 +108,7 @@ function dedupeTerms(terms: string[]): string[] {
   return deduped;
 }
 
-function normalizeForRuleMatching(value: string): string {
+export function normalizeForRuleMatching(value: string): string {
   return normalizeRuleTerm(value).toLocaleLowerCase('ko-KR');
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildSearchResultGroup } from '../../src/domain/search/groupResults';
-import type { NormalizedProductResult, PurchaseRequest } from '../../src/domain/search/types';
+import { buildSearchResultGroup } from '../../src/domain/search/groupResults.js';
+import type { NormalizedProductResult, PurchaseRequest } from '../../src/domain/search/types.js';
 
 const request: PurchaseRequest = {
   id: 'r1',

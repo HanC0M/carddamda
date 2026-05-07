@@ -1,16 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { SearchResultGroup } from '../domain/search/types';
-import type { ValidKeywordSearchRule } from '../domain/search/keywordRules';
+import type { SearchResultGroup } from '../domain/search/types.js';
 import {
   createPurchaseRequestRow,
   toValidPurchaseRequests,
   validatePurchaseRows,
   type PurchaseRequestRow,
   type ValidatedPurchaseRequestRow
-} from '../domain/session/validation';
-import { trackEvent } from './analytics';
-import { loadKeywordRules, saveKeywordRules, upsertKeywordRule } from './keywordRuleStorage';
+} from '../domain/session/validation.js';
+import { trackEvent } from './analytics.js';
 import './styles.css';
 
 const initialRows: PurchaseRequestRow[] = [];
@@ -24,9 +22,6 @@ function App() {
   const [sessionState, setSessionState] = useState<SessionState>('idle');
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
-  const [keywordRules, setKeywordRules] = useState<ValidKeywordSearchRule[]>(() =>
-    typeof window === 'undefined' ? [] : loadKeywordRules()
-  );
 
   const validated = useMemo(() => validatePurchaseRows(rows), [rows]);
   const validRequests = useMemo(() => toValidPurchaseRequests(validated), [validated]);
@@ -41,7 +36,7 @@ function App() {
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: validRequests, keywordRules })
+        body: JSON.stringify({ requests: validRequests })
       });
 
       if (!response.ok) {
@@ -54,7 +49,6 @@ function App() {
       setSessionState('results');
       trackEvent('Search Completed', {
         requestCount: validRequests.length,
-        keywordRuleCount: keywordRules.length,
         emptyGroupCount: data.groups.filter((group) => group.status === 'empty').length
       });
     } catch (error) {
@@ -90,10 +84,7 @@ function App() {
     });
   };
 
-  const retryGroup = async (
-    requestId: string,
-    keywordRulesOverride: ValidKeywordSearchRule[] = keywordRules
-  ) => {
+  const retryGroup = async (requestId: string) => {
     const request = validRequests.find((item) => item.id === requestId);
     if (!request) return;
 
@@ -107,7 +98,7 @@ function App() {
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: [request], keywordRules: keywordRulesOverride })
+        body: JSON.stringify({ requests: [request] })
       });
 
       if (!response.ok) throw new Error(`Retry failed with ${response.status}`);
@@ -137,18 +128,34 @@ function App() {
     }
   };
 
-  const addKeywordRule = (sourceKeyword: string, targetKeyword: string) => {
-    const nextRules = upsertKeywordRule(keywordRules, { sourceKeyword, targetKeyword });
-    if (nextRules === keywordRules) return null;
+  const suggestKeywordRule = async (sourceKeyword: string, targetKeyword: string) => {
+    try {
+      const response = await fetch('/api/keyword-rules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceKeyword, targetKeyword })
+      });
 
-    setKeywordRules(nextRules);
-    saveKeywordRules(nextRules);
-    trackEvent('Keyword Rule Added', {
-      sourceKeyword: nextRules[0]?.sourceKeyword ?? null,
-      targetKeyword: nextRules[0]?.targetKeyword ?? null,
-      keywordRuleCount: nextRules.length
-    });
-    return nextRules;
+      if (!response.ok) {
+        throw new Error(`Keyword rule suggestion failed with ${response.status}`);
+      }
+
+      const result = (await response.json()) as { status?: string; duplicate?: boolean };
+      trackEvent('Keyword Rule Suggested', {
+        sourceKeyword,
+        targetKeyword,
+        status: result.status ?? 'pending',
+        duplicate: Boolean(result.duplicate)
+      });
+      return true;
+    } catch (error) {
+      trackEvent('Keyword Rule Suggestion Failed', {
+        sourceKeyword,
+        targetKeyword,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+      return false;
+    }
   };
 
   const updateRow = (id: string, patch: Partial<PurchaseRequestRow>) => {
@@ -219,7 +226,7 @@ function App() {
           sessionState={sessionState}
           sessionError={sessionError}
           onRetry={retryGroup}
-          onAddKeywordRule={addKeywordRule}
+          onSuggestKeywordRule={suggestKeywordRule}
           collapsedGroups={collapsedGroups}
           onToggleGroup={toggleGroup}
         />
@@ -365,7 +372,7 @@ function ResultsWorkspace({
   sessionState,
   sessionError,
   onRetry,
-  onAddKeywordRule,
+  onSuggestKeywordRule,
   collapsedGroups,
   onToggleGroup
 }: {
@@ -373,11 +380,11 @@ function ResultsWorkspace({
   rows: ValidatedPurchaseRequestRow[];
   sessionState: SessionState;
   sessionError: string | null;
-  onRetry: (requestId: string, keywordRulesOverride?: ValidKeywordSearchRule[]) => void;
-  onAddKeywordRule: (
+  onRetry: (requestId: string) => void;
+  onSuggestKeywordRule: (
     sourceKeyword: string,
     targetKeyword: string
-  ) => ValidKeywordSearchRule[] | null;
+  ) => Promise<boolean>;
   collapsedGroups: Set<string>;
   onToggleGroup: (requestId: string) => void;
 }) {
@@ -415,7 +422,7 @@ function ResultsWorkspace({
                 errorMessage: null
               }}
               onRetry={onRetry}
-              onAddKeywordRule={onAddKeywordRule}
+              onSuggestKeywordRule={onSuggestKeywordRule}
               collapsed={false}
               onToggle={onToggleGroup}
             />
@@ -425,7 +432,7 @@ function ResultsWorkspace({
               key={group.requestId}
               group={group}
               onRetry={onRetry}
-              onAddKeywordRule={onAddKeywordRule}
+              onSuggestKeywordRule={onSuggestKeywordRule}
               collapsed={collapsedGroups.has(group.requestId)}
               onToggle={onToggleGroup}
             />
@@ -437,16 +444,16 @@ function ResultsWorkspace({
 function ResultGroup({
   group,
   onRetry,
-  onAddKeywordRule,
+  onSuggestKeywordRule,
   collapsed,
   onToggle
 }: {
   group: SearchResultGroup;
-  onRetry: (requestId: string, keywordRulesOverride?: ValidKeywordSearchRule[]) => void;
-  onAddKeywordRule: (
+  onRetry: (requestId: string) => void;
+  onSuggestKeywordRule: (
     sourceKeyword: string,
     targetKeyword: string
-  ) => ValidKeywordSearchRule[] | null;
+  ) => Promise<boolean>;
   collapsed: boolean;
   onToggle: (requestId: string) => void;
 }) {
@@ -491,7 +498,7 @@ function ResultGroup({
           <EmptyGroup
             group={group}
             message={`"${group.searchTerm}" 결과가 없습니다`}
-            onAddKeywordRule={onAddKeywordRule}
+            onSuggestKeywordRule={onSuggestKeywordRule}
             onRetry={onRetry}
           />
         ) : null}
@@ -499,7 +506,7 @@ function ResultGroup({
           <EmptyGroup
             group={group}
             message={group.errorMessage ?? '검색 중 오류가 발생했습니다'}
-            onAddKeywordRule={onAddKeywordRule}
+            onSuggestKeywordRule={onSuggestKeywordRule}
             onRetry={onRetry}
             error
           />
@@ -535,36 +542,44 @@ function ProductRow({ result }: { result: SearchResultGroup['results'][number] }
 function EmptyGroup({
   group,
   message,
-  onAddKeywordRule,
+  onSuggestKeywordRule,
   onRetry,
   error = false
 }: {
   group: SearchResultGroup;
   message: string;
-  onAddKeywordRule: (
+  onSuggestKeywordRule: (
     sourceKeyword: string,
     targetKeyword: string
-  ) => ValidKeywordSearchRule[] | null;
-  onRetry: (requestId: string, keywordRulesOverride?: ValidKeywordSearchRule[]) => void;
+  ) => Promise<boolean>;
+  onRetry: (requestId: string) => void;
   error?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [sourceKeyword, setSourceKeyword] = useState(group.searchTerm);
   const [targetKeyword, setTargetKeyword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const canSubmit =
     sourceKeyword.trim().length > 0 &&
     targetKeyword.trim().length > 0 &&
     sourceKeyword.trim() !== targetKeyword.trim();
 
-  const saveRule = () => {
-    if (!canSubmit) return;
+  const saveRule = async () => {
+    if (!canSubmit || isSubmitting) return;
 
-    const nextRules = onAddKeywordRule(sourceKeyword, targetKeyword);
-    if (!nextRules) return;
+    setIsSubmitting(true);
+    setSubmitMessage(null);
+    const ok = await onSuggestKeywordRule(sourceKeyword, targetKeyword);
+    setIsSubmitting(false);
 
-    setIsOpen(false);
-    setTargetKeyword('');
-    onRetry(group.requestId, nextRules);
+    if (ok) {
+      setTargetKeyword('');
+      setSubmitMessage('접수됐습니다. 확인 후 전체 검색에 반영됩니다.');
+      return;
+    }
+
+    setSubmitMessage('접수에 실패했습니다. 잠시 후 다시 시도해주세요.');
   };
 
   return (
@@ -578,7 +593,7 @@ function EmptyGroup({
         ) : null}
         {isOpen ? (
           <div className="sc-keyword-rule">
-            <p>다른 이름으로 등록된 카드라면 함께 검색할 키워드를 알려주세요.</p>
+            <p>다른 이름으로 등록된 카드라면 함께 검색할 키워드를 알려주세요. 확인 후 반영됩니다.</p>
             <label>
               <span>찾고 싶은 키워드</span>
               <input
@@ -595,9 +610,10 @@ function EmptyGroup({
                 placeholder="예: 체셔캣"
               />
             </label>
-            <button onClick={saveRule} disabled={!canSubmit}>
-              저장하고 다시 검색
+            <button onClick={saveRule} disabled={!canSubmit || isSubmitting}>
+              {isSubmitting ? '보내는 중' : '제안 보내기'}
             </button>
+            {submitMessage ? <div className="sc-keyword-rule-message">{submitMessage}</div> : null}
           </div>
         ) : null}
       </div>

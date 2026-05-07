@@ -1,4 +1,4 @@
-import type { NaverShoppingApiResponse } from './types';
+import type { NaverShoppingApiResponse } from './types.js';
 
 export type NaverShoppingClientOptions = {
   clientId: string;

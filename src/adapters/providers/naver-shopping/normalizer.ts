@@ -1,5 +1,5 @@
-import type { NormalizedProductResult } from '../../../domain/search/types';
-import type { NaverShoppingApiItem } from './types';
+import type { NormalizedProductResult } from '../../../domain/search/types.js';
+import type { NaverShoppingApiItem } from './types.js';
 
 export function normalizeNaverShoppingItems(
   items: NaverShoppingApiItem[]

@@ -3,8 +3,8 @@ import fixture from '../../fixtures/naver-shopping/search-results.json';
 import {
   filterPreferredStoreResults,
   normalizeNaverShoppingItems
-} from '../../src/adapters/providers/naver-shopping/normalizer';
-import type { NaverShoppingApiResponse } from '../../src/adapters/providers/naver-shopping/types';
+} from '../../src/adapters/providers/naver-shopping/normalizer.js';
+import type { NaverShoppingApiResponse } from '../../src/adapters/providers/naver-shopping/types.js';
 
 describe('naver shopping normalizer', () => {
   it('normalizes Naver API items and deduplicates by product ID', () => {

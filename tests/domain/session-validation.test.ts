@@ -4,7 +4,7 @@ import {
   toValidPurchaseRequests,
   validatePurchaseRows,
   type PurchaseRequestRow
-} from '../../src/domain/session/validation';
+} from '../../src/domain/session/validation.js';
 
 describe('purchase request validation', () => {
   it('keeps invalid rows visible and returns only valid requests for search', () => {

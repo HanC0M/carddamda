@@ -714,6 +714,12 @@ svg {
   cursor: not-allowed;
 }
 
+.sc-keyword-rule-message {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .sc-idle {
   display: grid;
   place-items: center;

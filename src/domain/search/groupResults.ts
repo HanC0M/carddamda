@@ -4,8 +4,8 @@ import type {
   SearchAuxiliaryAction,
   SearchGroupStatus,
   SearchResultGroup
-} from './types';
-import { buildTcgShopSearchUrl } from '../../adapters/linking/tcgshop';
+} from './types.js';
+import { buildTcgShopSearchUrl } from '../../adapters/linking/tcgshop.js';
 
 export type ProviderSearchOutcome =
   | { ok: true; results: NormalizedProductResult[] }

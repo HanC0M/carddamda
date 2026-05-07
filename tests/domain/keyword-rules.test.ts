@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   buildExpandedSearchTerms,
   normalizeKeywordRuleInput,
+  normalizeKeywordRuleSuggestion,
   toValidKeywordSearchRules
-} from '../../src/domain/search/keywordRules';
+} from '../../src/domain/search/keywordRules.js';
 
 describe('keyword search rules', () => {
   it('normalizes and rejects invalid rules', () => {
@@ -43,5 +44,19 @@ describe('keyword search rules', () => {
         }
       ])
     ).toEqual(['체셔 캣', '체셔캣']);
+  });
+
+  it('builds normalized suggestion fields for review storage', () => {
+    expect(
+      normalizeKeywordRuleSuggestion({
+        sourceKeyword: '  White   Rabbit ',
+        targetKeyword: '화이트래빗'
+      })
+    ).toEqual({
+      sourceKeyword: 'White Rabbit',
+      targetKeyword: '화이트래빗',
+      normalizedSource: 'white rabbit',
+      normalizedTarget: '화이트래빗'
+    });
   });
 });

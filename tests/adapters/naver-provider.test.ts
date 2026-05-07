@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildNaverShoppingSearchTerms } from '../../src/adapters/providers/naver-shopping/provider';
+import { buildNaverShoppingSearchTerms } from '../../src/adapters/providers/naver-shopping/provider.js';
 
 describe('naver shopping provider', () => {
   it('adds a CardSquare-specific query to reduce preferred seller bias', () => {

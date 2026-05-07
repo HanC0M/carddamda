@@ -1,4 +1,4 @@
-import { buildSearchSessionResponseWithRules } from '../src/api/searchSession';
+import { buildSearchSessionResponse } from '../src/api/searchSession.js';
 
 type VercelRequestLike = {
   method?: string;
@@ -12,18 +12,22 @@ type VercelResponseLike = {
 };
 
 export default async function handler(req: VercelRequestLike, res: VercelResponseLike) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+  try {
+    if (req.method !== 'POST') {
+      res.setHeader('Allow', 'POST');
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const body = parseBody(req.body);
+    const requests = isRecord(body) ? body.requests : undefined;
+    const payload = await buildSearchSessionResponse(requests, process.env);
+
+    res.status(200).json(payload);
+  } catch (error) {
+    console.error('search_handler_failed', error);
+    res.status(500).json({ error: 'Search request failed' });
   }
-
-  const body = parseBody(req.body);
-  const requests = isRecord(body) ? body.requests : undefined;
-  const keywordRules = isRecord(body) ? body.keywordRules : undefined;
-  const payload = await buildSearchSessionResponseWithRules(requests, keywordRules, process.env);
-
-  res.status(200).json(payload);
 }
 
 function parseBody(body: unknown): unknown {

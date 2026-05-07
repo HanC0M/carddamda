@@ -2,7 +2,11 @@ import dotenv from 'dotenv';
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildSearchSessionResponseWithRules } from './api/searchSession';
+import { buildSearchSessionResponse } from './api/searchSession.js';
+import {
+  KeywordRuleStoreNotConfiguredError,
+  submitKeywordRuleSuggestion
+} from './adapters/rules/supabaseKeywordRules.js';
 
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -17,13 +21,34 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.post('/api/search', async (req, res) => {
-  res.json(
-    await buildSearchSessionResponseWithRules(
-      req.body?.requests,
-      req.body?.keywordRules,
+  res.json(await buildSearchSessionResponse(req.body?.requests, process.env));
+});
+
+app.post('/api/keyword-rules', async (req, res) => {
+  try {
+    const result = await submitKeywordRuleSuggestion(
+      {
+        sourceKeyword: String(req.body?.sourceKeyword ?? ''),
+        targetKeyword: String(req.body?.targetKeyword ?? '')
+      },
       process.env
-    )
-  );
+    );
+
+    if (!result) {
+      res.status(400).json({ error: 'Invalid keyword rule suggestion' });
+      return;
+    }
+
+    res.status(202).json({ ok: true, ...result });
+  } catch (error) {
+    if (error instanceof KeywordRuleStoreNotConfiguredError) {
+      res.status(503).json({ error: 'Keyword rule store is not configured' });
+      return;
+    }
+
+    console.error('keyword_rule_suggestion_failed', error);
+    res.status(500).json({ error: 'Keyword rule suggestion failed' });
+  }
 });
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
