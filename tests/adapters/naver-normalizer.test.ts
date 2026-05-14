@@ -10,7 +10,7 @@ describe('naver shopping normalizer', () => {
   it('normalizes Naver API items and deduplicates by product ID', () => {
     const results = normalizeNaverShoppingItems((fixture as NaverShoppingApiResponse).items);
 
-    expect(results).toHaveLength(8);
+    expect(results).toHaveLength(9);
     expect(results[0]).toMatchObject({
       provider: 'naver-shopping',
       merchantName: '카드매니아',
@@ -41,7 +41,8 @@ describe('naver shopping normalizer', () => {
       '5005',
       '6006',
       '7007',
-      '8008'
+      '8008',
+      '9009'
     ]);
     expect(filtered.some((result) => result.merchantName === '카드매니아')).toBe(false);
   });
@@ -54,6 +55,7 @@ describe('naver shopping normalizer', () => {
     expect(results.find((result) => result.productId === '6006')?.merchantName).toBe('카드스퀘어');
     expect(results.find((result) => result.productId === '7007')?.merchantName).toBe('카드냥');
     expect(results.find((result) => result.productId === '8008')?.merchantName).toBe('TCG마트');
+    expect(results.find((result) => result.productId === '9009')?.merchantName).toBe('OUR TCG');
   });
 
   it('preserves Naver Shopping outbound links instead of guessing SmartStore slugs', () => {

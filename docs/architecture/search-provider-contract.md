@@ -20,14 +20,14 @@ Carddamda is a purchase-session accelerator, not a generic shopping crawler. Pro
 - Use the API to search each validated purchase request row.
 - Normalize API results before they reach UI state.
 - Deduplicate results by provider product ID when available.
-- After normalization, show only preferred sellers in V1: 카드스퀘어, `카드킹덤`, `카드냥`, `TCG마트`, and TCGShop listings surfaced through Naver.
+- After normalization, show only preferred sellers in V1: 카드스퀘어, `카드킹덤`, `카드냥`, `TCG마트`, `OUR TCG`, and TCGShop listings surfaced through Naver.
 
 Recommended initial API defaults:
 
 - `sort=sim`
 - `exclude=used:rental:cbshop`
 - `display=40` per search term for V1
-- Query each requested card with the raw search term, CardSquare/CardNyang/TCGMart-biased search terms, `"{searchTerm} 카드스퀘어"`, `"{searchTerm} 카드냥"`, and `"{searchTerm} TCG마트"`, unless the user already included the corresponding seller term.
+- Query each requested card with the raw search term, CardSquare/CardNyang/TCGMart/OURTCG-biased search terms, `"{searchTerm} 카드스퀘어"`, `"{searchTerm} 카드냥"`, `"{searchTerm} TCG마트"`, and `"{searchTerm} OUR TCG"`, unless the user already included the corresponding seller term.
 - If users report that a missing result is listed under another keyword, accept a local companion-keyword rule such as `"체셔 캣" should also search `"체셔캣"`. Apply those rules before provider-specific expansion.
 
 These defaults can change after real purchase-session testing, but the normalized result contract should remain stable.
@@ -42,6 +42,7 @@ Allowed product results:
 - `https://smartstore.naver.com/cardkingdom`
 - `https://smartstore.naver.com/cardnyang`
 - `https://smartstore.naver.com/tcgmart`
+- `https://smartstore.naver.com/ourtcg`
 - TCGShop listings when they appear through the Naver Shopping API
 
 Filtering rules:
@@ -51,7 +52,8 @@ Filtering rules:
 - Accept `카드킹덤`, `cardkingdom`, or `card kingdom` as CardKingdom.
 - Accept `카드냥`, `cardnyang`, or `card nyang` as 카드냥.
 - Accept `TCG마트`, `tcgmart`, or `tcg mart` as TCG마트.
-- Also accept direct Smart Store slug URLs for `/sulyunyen/`, legacy `/yugiohstore/`, `/cardkingdom/`, `/cardnyang/`, and `/tcgmart/`.
+- Accept `OUR TCG`, `ourtcg`, `아워 TCG`, or `아워티씨지` as OUR TCG.
+- Also accept direct Smart Store slug URLs for `/sulyunyen/`, legacy `/yugiohstore/`, `/cardkingdom/`, `/cardnyang/`, `/tcgmart/`, and `/ourtcg/`.
 - Preserve Naver Shopping API `link` values for outbound clicks. Do not rewrite SmartStore links to guessed canonical slugs; `https://smartstore.naver.com/main/products/...` is the provider-owned routing URL and may resolve differently per product/store state.
 - Do not show general Naver catalog results or unrelated smart stores in V1.
 
@@ -162,7 +164,7 @@ TCGShop direct search should be represented as an auxiliary action:
 Map Naver Shopping API fields as follows:
 
 - `provider`: `naver-shopping`
-- `merchantName`: normalized seller display name. For preferred Smart Store sellers, show 카드스퀘어 for CardSquare/Yugioh Store matches, 카드킹덤 for `cardkingdom`, 카드냥 for `cardnyang`, and TCG마트 for `tcgmart`.
+- `merchantName`: normalized seller display name. For preferred Smart Store sellers, show 카드스퀘어 for CardSquare/Yugioh Store matches, 카드킹덤 for `cardkingdom`, 카드냥 for `cardnyang`, TCG마트 for `tcgmart`, and OUR TCG for `ourtcg`.
 - `title`: API title with markup removed
 - `price`: numeric `lprice`, or `null` if unavailable
 - `imageUrl`: `image`, or `null`
@@ -171,7 +173,7 @@ Map Naver Shopping API fields as follows:
 - `availability`: `unknown`
 - `sourceTags`: include `tcgshop-via-naver` when TCGShop is detected
 
-After this mapping, filter out any result that is not CardKingdom, 카드스퀘어, 카드냥, TCG마트, or TCGShop via Naver.
+After this mapping, filter out any result that is not CardKingdom, 카드스퀘어, 카드냥, TCG마트, OUR TCG, or TCGShop via Naver.
 
 ### Companion Keyword Rules
 
@@ -244,7 +246,7 @@ Required coverage:
 - product ID deduplication
 - TCGShop detection via `mallName`
 - TCGShop detection via URL hostname
-- preferred seller filtering for CardKingdom, 카드스퀘어, 카드냥, TCG마트, and TCGShop
+- preferred seller filtering for CardKingdom, 카드스퀘어, 카드냥, TCG마트, OUR TCG, and TCGShop
 - exclusion of general Naver catalog results and unrelated smart stores
 - direct TCGShop auxiliary action generation
 - group status for success, empty, partial failure, and failed searches

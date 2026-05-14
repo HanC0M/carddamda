@@ -56,6 +56,9 @@ export function buildNaverShoppingSearchTerms(
     if (!/tcg\s*마트|tcg마트|tcg\s*mart|tcgmart/i.test(term)) {
       terms.push(`${term} TCG마트`);
     }
+    if (!/our\s*tcg|아워\s*tcg|아워티씨지/i.test(term)) {
+      terms.push(`${term} OUR TCG`);
+    }
   }
 
   return dedupeTerms(terms);

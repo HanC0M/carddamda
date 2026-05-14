@@ -29,6 +29,7 @@ export function isPreferredStoreResult(result: NormalizedProductResult): boolean
     isCardKingdomListing(result.merchantName, result.externalUrl) ||
     isCardNyangListing(result.merchantName, result.externalUrl) ||
     isTcgMartListing(result.merchantName, result.externalUrl) ||
+    isOurTcgListing(result.merchantName, result.externalUrl) ||
     result.sourceTags.includes('tcgshop-via-naver')
   );
 }
@@ -70,6 +71,10 @@ export function normalizePreferredMerchantName(
 
   if (isTcgMartListing(merchantName, externalUrl)) {
     return 'TCG마트';
+  }
+
+  if (isOurTcgListing(merchantName, externalUrl)) {
+    return 'OUR TCG';
   }
 
   return merchantName;
@@ -134,6 +139,14 @@ export function isTcgMartListing(merchantName: string, externalUrl: string): boo
   }
 
   return isSmartStoreSlug(externalUrl, 'tcgmart');
+}
+
+export function isOurTcgListing(merchantName: string, externalUrl: string): boolean {
+  if (/our\s*tcg|아워\s*tcg|아워티씨지/i.test(merchantName)) {
+    return true;
+  }
+
+  return isSmartStoreSlug(externalUrl, 'ourtcg');
 }
 
 function isSmartStoreSlug(externalUrl: string, slug: string): boolean {
