@@ -11,7 +11,7 @@
     "build": "Production build passed.",
     "browserFlow": "Playwright mock upload added recognized rows and displayed unresolved warnings.",
     "configGuard": "GET /api/deck-image-recognition exposes provider availability without leaking secrets, and the UI disables deck upload when OPENAI_API_KEY is missing.",
-    "developmentDeployment": "https://carddamda-develop.vercel.app points to Vercel preview https://carddamda-dxmjw7ohm-hanc0ms-projects.vercel.app, whose remote build passed."
+    "developmentDeployment": "https://carddamda-develop.vercel.app points to a Vercel Preview deployment whose remote build passed and includes api/deck-image-recognition."
   },
   "blockers": [
     "Actual recognition cannot be verified or used in this workspace/Vercel project until OPENAI_API_KEY is configured locally and in Vercel."

@@ -33,7 +33,7 @@ Verify the feature for uploading Yu-Gi-Oh NEURON / Master Duel deck-list images 
   - Command: `npm run deploy:dev`
   - Result: Vercel Preview build succeeded.
   - Stable dev URL: `https://carddamda-develop.vercel.app`
-  - Preview URL: `https://carddamda-dxmjw7ohm-hanc0ms-projects.vercel.app`
+  - Vercel inspect verified the preview is `Ready` and includes `api/deck-image-recognition`.
 
 ## Coverage
 - Domain normalization deduplicates recognized cards and sums quantity.
