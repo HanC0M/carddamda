@@ -7,11 +7,11 @@
     "api": "POST /api/deck-image-recognition exists for Vercel and local Express; image validation and missing provider configuration are handled.",
     "providerBoundary": "OpenAI vision logic lives under src/adapters/deck-recognition/openaiVision.ts, outside UI components.",
     "domainBoundary": "Recognition types, response normalization, deduplication, and row append/merge logic live under src/domain/deck-image-recognition/.",
-    "tests": "13 test files passed, 33 tests passed.",
+    "tests": "13 test files passed, 34 tests passed.",
     "build": "Production build passed.",
     "browserFlow": "Playwright mock upload added recognized rows and displayed unresolved warnings.",
     "configGuard": "GET /api/deck-image-recognition exposes provider availability without leaking secrets, and the UI disables deck upload when OPENAI_API_KEY is missing.",
-    "developmentDeployment": "https://carddamda-develop.vercel.app points to Vercel preview https://carddamda-9lgtr5amu-hanc0ms-projects.vercel.app, whose remote build passed."
+    "developmentDeployment": "https://carddamda-develop.vercel.app points to Vercel preview https://carddamda-dxmjw7ohm-hanc0ms-projects.vercel.app, whose remote build passed."
   },
   "blockers": [
     "Actual recognition cannot be verified or used in this workspace/Vercel project until OPENAI_API_KEY is configured locally and in Vercel."

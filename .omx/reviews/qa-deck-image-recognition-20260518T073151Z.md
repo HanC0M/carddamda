@@ -6,7 +6,7 @@ Verify the feature for uploading Yu-Gi-Oh NEURON / Master Duel deck-list images 
 ## Evidence
 - Unit/integration tests:
   - Command: `PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin npm test`
-  - Result: 13 test files passed, 33 tests passed.
+  - Result: 13 test files passed, 34 tests passed.
 - Production build:
   - Command: `PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin npm run build`
   - Result: TypeScript and Vite production build succeeded.
@@ -33,7 +33,7 @@ Verify the feature for uploading Yu-Gi-Oh NEURON / Master Duel deck-list images 
   - Command: `npm run deploy:dev`
   - Result: Vercel Preview build succeeded.
   - Stable dev URL: `https://carddamda-develop.vercel.app`
-  - Preview URL: `https://carddamda-9lgtr5amu-hanc0ms-projects.vercel.app`
+  - Preview URL: `https://carddamda-dxmjw7ohm-hanc0ms-projects.vercel.app`
 
 ## Coverage
 - Domain normalization deduplicates recognized cards and sums quantity.
