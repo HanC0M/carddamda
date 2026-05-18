@@ -3,6 +3,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  buildDeckImageRecognitionConfig,
   buildDeckImageRecognitionResponse,
   mapDeckRecognitionError
 } from './api/deckImageRecognition.js';
@@ -29,6 +30,10 @@ const port = Number.parseInt(process.env.API_PORT ?? '5174', 10);
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'carddamda' });
+});
+
+app.get('/api/deck-image-recognition', (_req, res) => {
+  res.json(buildDeckImageRecognitionConfig(process.env));
 });
 
 app.post('/api/deck-image-recognition', express.json({ limit: '5mb' }), async (req, res) => {

@@ -19,7 +19,7 @@ const DEFAULT_EXPANDED_RESULT_GROUPS = 3;
 type SessionState = 'idle' | 'searching' | 'results';
 type FeedbackType = 'bug' | 'shop' | 'feature' | 'other';
 type DeckImportState = {
-  status: 'idle' | 'reading' | 'recognizing' | 'success' | 'error';
+  status: 'checking' | 'idle' | 'unavailable' | 'reading' | 'recognizing' | 'success' | 'error';
   message: string | null;
   warnings: string[];
 };
@@ -28,8 +28,8 @@ const MAX_DECK_SOURCE_IMAGE_BYTES = 12 * 1024 * 1024;
 const MAX_DECK_UPLOAD_BYTES = 3 * 1024 * 1024;
 const MAX_DECK_IMAGE_DIMENSION = 1600;
 const initialDeckImportState: DeckImportState = {
-  status: 'idle',
-  message: null,
+  status: 'checking',
+  message: '덱 이미지 인식 설정을 확인하는 중입니다.',
   warnings: []
 };
 
@@ -47,6 +47,45 @@ function App() {
 
   useEffect(() => {
     trackEvent('App Opened');
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDeckRecognitionConfig() {
+      try {
+        const response = await fetch('/api/deck-image-recognition');
+        if (!response.ok) throw new Error(`Config failed with ${response.status}`);
+        const config = (await response.json()) as { available?: boolean };
+        if (!active) return;
+
+        if (config.available) {
+          setDeckImport((current) =>
+            current.status === 'checking' ? { status: 'idle', message: null, warnings: [] } : current
+          );
+          return;
+        }
+
+        setDeckImport({
+          status: 'unavailable',
+          message: '덱 이미지 인식 설정이 아직 연결되지 않았습니다.',
+          warnings: ['OPENAI_API_KEY 설정 후 사용할 수 있습니다.']
+        });
+      } catch {
+        if (!active) return;
+        setDeckImport({
+          status: 'unavailable',
+          message: '덱 이미지 인식 설정을 확인할 수 없습니다.',
+          warnings: ['잠시 후 다시 시도하거나 설정을 확인해주세요.']
+        });
+      }
+    }
+
+    loadDeckRecognitionConfig();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const runSearch = async () => {
@@ -100,6 +139,10 @@ function App() {
   };
 
   const importDeckImage = async (file: File) => {
+    if (deckImport.status === 'checking' || deckImport.status === 'unavailable') {
+      return;
+    }
+
     if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
       setDeckImport({
         status: 'error',
@@ -489,6 +532,7 @@ function SessionPanel({
   onDeckImageSelected: (file: File) => void;
 }) {
   const importBusy = deckImport.status === 'reading' || deckImport.status === 'recognizing';
+  const importUnavailable = deckImport.status === 'checking' || deckImport.status === 'unavailable';
 
   return (
     <aside className="sc-panel">
@@ -519,6 +563,7 @@ function SessionPanel({
       </button>
       <DeckImageImportControl
         busy={importBusy}
+        unavailable={importUnavailable}
         state={deckImport}
         onDeckImageSelected={onDeckImageSelected}
       />
@@ -536,22 +581,26 @@ function SessionPanel({
 
 function DeckImageImportControl({
   busy,
+  unavailable,
   state,
   onDeckImageSelected
 }: {
   busy: boolean;
+  unavailable: boolean;
   state: DeckImportState;
   onDeckImageSelected: (file: File) => void;
 }) {
   return (
     <div className={`sc-deck-import is-${state.status}`}>
-      <label className={`sc-deck-import-trigger ${busy ? 'is-disabled' : ''}`}>
+      <label className={`sc-deck-import-trigger ${busy || unavailable ? 'is-disabled' : ''}`}>
         <IconImage />
-        <span>{busy ? '이미지 인식 중' : '뉴런/마듀 덱 이미지 등록'}</span>
+        <span>
+          {busy ? '이미지 인식 중' : unavailable ? '덱 이미지 인식 설정 필요' : '뉴런/마듀 덱 이미지 등록'}
+        </span>
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp"
-          disabled={busy}
+          disabled={busy || unavailable}
           onChange={(event) => {
             const file = event.currentTarget.files?.[0];
             event.currentTarget.value = '';

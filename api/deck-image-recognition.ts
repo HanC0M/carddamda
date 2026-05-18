@@ -1,4 +1,5 @@
 import {
+  buildDeckImageRecognitionConfig,
   buildDeckImageRecognitionResponse,
   mapDeckRecognitionError
 } from '../src/api/deckImageRecognition.js';
@@ -16,8 +17,13 @@ type VercelResponseLike = {
 
 export default async function handler(req: VercelRequestLike, res: VercelResponseLike) {
   try {
+    if (req.method === 'GET') {
+      res.status(200).json(buildDeckImageRecognitionConfig(process.env));
+      return;
+    }
+
     if (req.method !== 'POST') {
-      res.setHeader('Allow', 'POST');
+      res.setHeader('Allow', 'GET, POST');
       res.status(405).json({ error: 'Method not allowed' });
       return;
     }

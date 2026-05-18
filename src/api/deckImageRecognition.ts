@@ -30,6 +30,16 @@ export async function buildDeckImageRecognitionResponse(
   return recognizeDeckImageWithOpenAI(request.imageDataUrl, request.sourceHint ?? 'unknown', env);
 }
 
+export function buildDeckImageRecognitionConfig(env: DeckRecognitionEnv) {
+  return {
+    available: Boolean(env.OPENAI_API_KEY),
+    provider: 'openai',
+    model: env.OPENAI_DECK_RECOGNITION_MODEL || 'gpt-5.2',
+    acceptedMimeTypes: [...ALLOWED_MIME_TYPES],
+    maxImageBytes: MAX_IMAGE_BYTES
+  };
+}
+
 export function parseDeckImageRecognitionRequest(
   input: unknown
 ): DeckImageRecognitionRequest {

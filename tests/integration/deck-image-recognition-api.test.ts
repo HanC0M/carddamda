@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildDeckImageRecognitionConfig,
   buildDeckImageRecognitionResponse,
   mapDeckRecognitionError,
   parseDeckImageRecognitionRequest
@@ -38,5 +39,21 @@ describe('deck image recognition api contract', () => {
     const mapped = mapDeckRecognitionError(new DeckRecognitionNotConfiguredError());
     expect(mapped.status).toBe(503);
     expect(mapped.body.error).toContain('설정');
+  });
+
+  it('exposes recognition configuration without leaking secrets', () => {
+    expect(buildDeckImageRecognitionConfig({}).available).toBe(false);
+    expect(
+      buildDeckImageRecognitionConfig({
+        OPENAI_API_KEY: 'secret-key',
+        OPENAI_DECK_RECOGNITION_MODEL: 'custom-model'
+      })
+    ).toEqual({
+      available: true,
+      provider: 'openai',
+      model: 'custom-model',
+      acceptedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      maxImageBytes: 3 * 1024 * 1024
+    });
   });
 });
