@@ -8,6 +8,7 @@
     "dev:web": "vite --host 0.0.0.0",
     "dev:api": "tsx watch src/server.ts",
     "build": "tsc --noEmit && vite build",
+    "check:deck-recognition": "bash scripts/check-deck-recognition-env.sh",
     "deploy:dev": "bash scripts/deploy-dev.sh",
     "test": "vitest run",
     "test:watch": "vitest"

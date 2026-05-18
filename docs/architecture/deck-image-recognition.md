@@ -220,6 +220,31 @@ OPENAI_API_KEY=
 OPENAI_DECK_RECOGNITION_MODEL=gpt-5.2
 ```
 
+Operational checks:
+
+```bash
+npm run check:deck-recognition
+```
+
+Expected before `OPENAI_API_KEY` is configured:
+
+```json
+{"available":false,"provider":"openai","model":"gpt-5.2","acceptedMimeTypes":["image/jpeg","image/png","image/webp"],"maxImageBytes":3145728}
+```
+
+Expected after `OPENAI_API_KEY` is configured locally or in Vercel:
+
+```json
+{"available":true,"provider":"openai","model":"gpt-5.2","acceptedMimeTypes":["image/jpeg","image/png","image/webp"],"maxImageBytes":3145728}
+```
+
+For the development deployment, set the secret in the Vercel project and redeploy `develop` with:
+
+```bash
+vercel env add OPENAI_API_KEY preview
+npm run deploy:dev
+```
+
 ## Decision
 
 Implement deck image recognition as a bounded import flow backed by:
