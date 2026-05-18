@@ -1,13 +1,16 @@
 # Deck Image Recognition Future Plan
 
 Date: 2026-05-07
-Status: Future architecture note
+Updated: 2026-05-18
+Status: Implemented as reviewed candidate import
 
 ## Purpose
 
 This document captures a future plan for importing card purchase rows from deck-list screenshots such as Yu-Gi-Oh Master Duel deck grids.
 
-This is not a V1 implementation commitment. Carddamda V1 remains a single-screen purchase-session accelerator where users submit card names and quantities, review grouped search results, and leave through external product links.
+This began as a future note and is now implemented as a candidate import path. Carddamda V1 remains a single-screen purchase-session accelerator where users submit card names and quantities, review grouped search results, and leave through external product links.
+
+The implemented version does not start product search automatically. It converts a deck screenshot into purchase request rows, appends recognized cards in bulk, and leaves warnings for unresolved or uncertain cards.
 
 ## Problem Shape
 
@@ -199,13 +202,31 @@ Required test areas:
 - Official database scraping may create maintenance and policy risk.
 - Image storage and embedding generation add cost and operational complexity.
 
+## Implemented V1 Behavior
+
+- The session panel accepts `jpg`, `png`, and `webp` deck screenshots.
+- The browser resizes/compresses the screenshot before upload to keep request payloads bounded.
+- `POST /api/deck-image-recognition` validates the image data URL and sends it to the recognition provider.
+- The initial provider is OpenAI vision through the Responses API with structured JSON output.
+- Provider logic lives outside UI under `src/adapters/deck-recognition/`.
+- Response normalization and duplicate quantity merging live under `src/domain/deck-image-recognition/`.
+- Recognized cards are appended to the existing purchase rows. Existing matching rows are quantity-merged.
+- Unresolved cards and provider warnings are shown in the panel.
+
+Required environment:
+
+```text
+OPENAI_API_KEY=
+OPENAI_DECK_RECOGNITION_MODEL=gpt-5.2
+```
+
 ## Decision
 
-Do not implement deck image recognition in V1.
+Implement deck image recognition as a bounded import flow backed by:
 
-For a future version, implement it as a reviewed import flow backed by:
+1. a vision provider that returns candidate Korean search names,
+2. independently testable response normalization,
+3. visible unresolved-card warnings, and
+4. purchase-row append/merge behavior before the user runs search.
 
-1. local visual identity data derived from an allowed card source,
-2. a separately maintained Korean search-name mapping table,
-3. app-specific deck image templates, and
-4. a user confirmation UI before adding purchase rows.
+Future hardening can still add local visual identity data, a Korean search-name mapping table, app-specific deck templates, and a fuller review table before append.

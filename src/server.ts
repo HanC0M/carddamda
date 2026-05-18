@@ -2,6 +2,10 @@ import dotenv from 'dotenv';
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  buildDeckImageRecognitionResponse,
+  mapDeckRecognitionError
+} from './api/deckImageRecognition.js';
 import { buildSearchSessionResponse } from './api/searchSession.js';
 import {
   KeywordRuleStoreNotConfiguredError,
@@ -23,11 +27,21 @@ dotenv.config();
 const app = express();
 const port = Number.parseInt(process.env.API_PORT ?? '5174', 10);
 
-app.use(express.json({ limit: '128kb' }));
-
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'carddamda' });
 });
+
+app.post('/api/deck-image-recognition', express.json({ limit: '5mb' }), async (req, res) => {
+  try {
+    res.json(await buildDeckImageRecognitionResponse(req.body, process.env));
+  } catch (error) {
+    console.error('deck_image_recognition_failed', error);
+    const mapped = mapDeckRecognitionError(error);
+    res.status(mapped.status).json(mapped.body);
+  }
+});
+
+app.use(express.json({ limit: '128kb' }));
 
 app.post('/api/search', async (req, res) => {
   res.json(await buildSearchSessionResponse(req.body?.requests, process.env));

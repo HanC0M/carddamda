@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { appendRecognizedCardsToRows } from '../domain/deck-image-recognition/normalizer.js';
+import type { DeckImageRecognitionResponse } from '../domain/deck-image-recognition/types.js';
 import type { SearchResultGroup } from '../domain/search/types.js';
 import {
   createPurchaseRequestRow,
@@ -16,6 +18,20 @@ const DEFAULT_EXPANDED_RESULT_GROUPS = 3;
 
 type SessionState = 'idle' | 'searching' | 'results';
 type FeedbackType = 'bug' | 'shop' | 'feature' | 'other';
+type DeckImportState = {
+  status: 'idle' | 'reading' | 'recognizing' | 'success' | 'error';
+  message: string | null;
+  warnings: string[];
+};
+
+const MAX_DECK_SOURCE_IMAGE_BYTES = 12 * 1024 * 1024;
+const MAX_DECK_UPLOAD_BYTES = 3 * 1024 * 1024;
+const MAX_DECK_IMAGE_DIMENSION = 1600;
+const initialDeckImportState: DeckImportState = {
+  status: 'idle',
+  message: null,
+  warnings: []
+};
 
 function App() {
   const [rows, setRows] = useState<PurchaseRequestRow[]>(initialRows);
@@ -24,6 +40,7 @@ function App() {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [deckImport, setDeckImport] = useState<DeckImportState>(initialDeckImportState);
 
   const validated = useMemo(() => validatePurchaseRows(rows), [rows]);
   const validRequests = useMemo(() => toValidPurchaseRequests(validated), [validated]);
@@ -79,6 +96,69 @@ function App() {
       );
       setSessionState('results');
       trackEvent('Search Failed', { requestCount: validRequests.length });
+    }
+  };
+
+  const importDeckImage = async (file: File) => {
+    if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
+      setDeckImport({
+        status: 'error',
+        message: 'jpg, png, webp 이미지만 업로드할 수 있습니다.',
+        warnings: []
+      });
+      return;
+    }
+
+    if (file.size > MAX_DECK_SOURCE_IMAGE_BYTES) {
+      setDeckImport({
+        status: 'error',
+        message: '원본 이미지는 12MB 이하로 업로드해주세요.',
+        warnings: []
+      });
+      return;
+    }
+
+    try {
+      setDeckImport({ status: 'reading', message: '이미지를 준비하는 중입니다.', warnings: [] });
+      const imageDataUrl = await prepareDeckImageDataUrl(file);
+
+      setDeckImport({ status: 'recognizing', message: '덱 이미지를 인식하는 중입니다.', warnings: [] });
+      trackEvent('Deck Image Import Started', {
+        size: file.size,
+        type: file.type
+      });
+
+      const response = await fetch('/api/deck-image-recognition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageDataUrl, sourceHint: 'unknown' })
+      });
+      const data = (await response.json()) as DeckImageRecognitionResponse | { error?: string };
+
+      if (!response.ok) {
+        throw new Error('error' in data ? data.error : '덱 이미지 인식에 실패했습니다.');
+      }
+
+      const recognition = data as DeckImageRecognitionResponse;
+      setRows((current) => appendRecognizedCardsToRows(current, recognition.recognized));
+      setDeckImport({
+        status: 'success',
+        message:
+          recognition.recognized.length > 0
+            ? `${recognition.recognized.length}개 카드를 구매 요청에 추가했습니다.`
+            : '인식된 카드가 없습니다.',
+        warnings: buildDeckImportWarnings(recognition)
+      });
+      trackEvent('Deck Image Import Completed', {
+        recognizedCount: recognition.recognized.length,
+        unresolvedCount: recognition.unresolved.length,
+        warningCount: recognition.warnings.length,
+        sourceTemplate: recognition.sourceTemplate
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '덱 이미지 인식에 실패했습니다.';
+      setDeckImport({ status: 'error', message, warnings: [] });
+      trackEvent('Deck Image Import Failed', { message });
     }
   };
 
@@ -278,6 +358,8 @@ function App() {
           onUpdate={updateRow}
           onRowKeyDown={onRowKeyDown}
           onSearch={runSearch}
+          deckImport={deckImport}
+          onDeckImageSelected={importDeckImage}
         />
         <ResultsWorkspace
           groups={groups}
@@ -299,6 +381,61 @@ function App() {
       />
     </div>
   );
+}
+
+async function prepareDeckImageDataUrl(file: File): Promise<string> {
+  const image = await loadImage(file);
+  const scale = Math.min(1, MAX_DECK_IMAGE_DIMENSION / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+
+  if (!context) {
+    throw new Error('이미지를 처리할 수 없습니다.');
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+
+  for (const quality of [0.86, 0.74, 0.62]) {
+    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+    if (estimateDataUrlBytes(dataUrl) <= MAX_DECK_UPLOAD_BYTES) {
+      return dataUrl;
+    }
+  }
+
+  throw new Error('이미지 용량을 줄일 수 없습니다. 더 작은 스크린샷을 업로드해주세요.');
+}
+
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('이미지를 읽을 수 없습니다.'));
+    };
+    image.src = url;
+  });
+}
+
+function estimateDataUrlBytes(dataUrl: string) {
+  const base64 = dataUrl.split(',')[1] ?? '';
+  return Math.floor((base64.length * 3) / 4);
+}
+
+function buildDeckImportWarnings(recognition: DeckImageRecognitionResponse) {
+  const warnings = [...recognition.warnings];
+  if (recognition.unresolved.length > 0) {
+    warnings.push(`${recognition.unresolved.length}개 카드는 인식하지 못했습니다.`);
+  }
+  return warnings;
 }
 
 function buildDefaultCollapsedGroups(groups: SearchResultGroup[]) {
@@ -336,7 +473,9 @@ function SessionPanel({
   onDelete,
   onUpdate,
   onRowKeyDown,
-  onSearch
+  onSearch,
+  deckImport,
+  onDeckImageSelected
 }: {
   rows: ValidatedPurchaseRequestRow[];
   validCount: number;
@@ -346,7 +485,11 @@ function SessionPanel({
   onUpdate: (id: string, patch: Partial<PurchaseRequestRow>) => void;
   onRowKeyDown: (event: React.KeyboardEvent<HTMLInputElement>, index: number, id: string) => void;
   onSearch: () => void;
+  deckImport: DeckImportState;
+  onDeckImageSelected: (file: File) => void;
 }) {
+  const importBusy = deckImport.status === 'reading' || deckImport.status === 'recognizing';
+
   return (
     <aside className="sc-panel">
       <div className="sc-panel-head">
@@ -374,6 +517,11 @@ function SessionPanel({
       <button className="sc-add-row" onClick={onAdd}>
         <IconPlus /> 행 추가
       </button>
+      <DeckImageImportControl
+        busy={importBusy}
+        state={deckImport}
+        onDeckImageSelected={onDeckImageSelected}
+      />
       <button
         className="sc-btn sc-btn-primary sc-panel-search"
         onClick={onSearch}
@@ -383,6 +531,43 @@ function SessionPanel({
         <span>{sessionState === 'searching' ? '검색 중' : '검색'}</span>
       </button>
     </aside>
+  );
+}
+
+function DeckImageImportControl({
+  busy,
+  state,
+  onDeckImageSelected
+}: {
+  busy: boolean;
+  state: DeckImportState;
+  onDeckImageSelected: (file: File) => void;
+}) {
+  return (
+    <div className={`sc-deck-import is-${state.status}`}>
+      <label className={`sc-deck-import-trigger ${busy ? 'is-disabled' : ''}`}>
+        <IconImage />
+        <span>{busy ? '이미지 인식 중' : '뉴런/마듀 덱 이미지 등록'}</span>
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          disabled={busy}
+          onChange={(event) => {
+            const file = event.currentTarget.files?.[0];
+            event.currentTarget.value = '';
+            if (file) onDeckImageSelected(file);
+          }}
+        />
+      </label>
+      {state.message ? <div className="sc-deck-import-message">{state.message}</div> : null}
+      {state.warnings.length > 0 ? (
+        <ul className="sc-deck-import-warnings">
+          {state.warnings.slice(0, 3).map((warning) => (
+            <li key={warning}>{warning}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 
@@ -879,6 +1064,10 @@ function IconTrash() {
 
 function IconSearch() {
   return <svg viewBox="0 0 16 16"><path fill="currentColor" fillRule="evenodd" d="M7 1a6 6 0 1 0 3.7 10.74l3.28 3.28 1.06-1.06-3.28-3.28A6 6 0 0 0 7 1m0 1.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9" /></svg>;
+}
+
+function IconImage() {
+  return <svg viewBox="0 0 16 16"><path fill="currentColor" d="M2.5 3A1.5 1.5 0 0 1 4 1.5h8A1.5 1.5 0 0 1 13.5 3v10A1.5 1.5 0 0 1 12 14.5H4A1.5 1.5 0 0 1 2.5 13zm1.5 0v6.4l2.1-2.1 2.1 2.1 3.8-3.8V3zm0 10h8V7.72l-3.8 3.8-2.1-2.1L4 11.52zm2.25-8.25a1.25 1.25 0 1 1 2.5 0 1.25 1.25 0 0 1-2.5 0" /></svg>;
 }
 
 function IconExternalLink() {

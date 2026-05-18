@@ -288,6 +288,75 @@ svg {
   color: var(--text);
 }
 
+.sc-deck-import {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.sc-deck-import-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 9999px;
+  padding: 9px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sc-deck-import-trigger:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.sc-deck-import-trigger.is-disabled {
+  color: #5a5a5a;
+  cursor: wait;
+}
+
+.sc-deck-import-trigger input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sc-deck-import-message {
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: #101010;
+  color: var(--text-3);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.sc-deck-import.is-success .sc-deck-import-message {
+  color: var(--accent);
+}
+
+.sc-deck-import.is-error .sc-deck-import-message {
+  color: var(--neg);
+}
+
+.sc-deck-import-warnings {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  border-radius: 7px;
+  padding: 8px 10px 8px 24px;
+  background: rgba(255, 164, 43, 0.1);
+  color: var(--warn);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
 .sc-panel-empty {
   display: grid;
   gap: 7px;

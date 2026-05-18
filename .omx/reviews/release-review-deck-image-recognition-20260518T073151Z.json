@@ -1,0 +1,22 @@
+{
+  "verdict": "NO_GO",
+  "reviewer": "release-reviewer",
+  "objective": "Implement deck-list image recognition import for Yu-Gi-Oh NEURON / Master Duel images so recognized cards are added to search rows in bulk.",
+  "evidence": {
+    "ui": "Session panel exposes a compact '뉴런/마듀 덱 이미지 등록' file input and displays reading, recognition, success, warning, and error states.",
+    "api": "POST /api/deck-image-recognition exists for Vercel and local Express; image validation and missing provider configuration are handled.",
+    "providerBoundary": "OpenAI vision logic lives under src/adapters/deck-recognition/openaiVision.ts, outside UI components.",
+    "domainBoundary": "Recognition types, response normalization, deduplication, and row append/merge logic live under src/domain/deck-image-recognition/.",
+    "tests": "13 test files passed, 33 tests passed.",
+    "build": "Production build passed.",
+    "browserFlow": "Playwright mock upload added recognized rows and displayed unresolved warnings."
+  },
+  "blockers": [
+    "Actual recognition cannot be verified or used in this workspace/Vercel project until OPENAI_API_KEY is configured."
+  ],
+  "knownLimitations": [
+    "The feature relies on model vision rather than a local Yu-Gi-Oh visual identity database, so uncertain cards may require user correction.",
+    "A detailed per-card confirmation table is not included in this iteration; warnings are shown and rows remain editable before search."
+  ],
+  "userVerificationStatement": "A user can upload a NEURON/Master Duel-style deck image, receive recognized card candidates, and have those cards added to the purchase search rows in bulk before running search."
+}
