@@ -34,6 +34,19 @@ Verify the feature for uploading Yu-Gi-Oh NEURON / Master Duel deck-list images 
   - Result: Vercel Preview build succeeded.
   - Stable dev URL: `https://carddamda-develop.vercel.app`
   - Vercel inspect verified the preview is `Ready` and includes `api/deck-image-recognition`.
+- Provider configuration:
+  - Local `.env.local`: `OPENAI_API_KEY` configured.
+  - Vercel Preview env: `OPENAI_API_KEY` configured and encrypted.
+  - Command: `npm run deploy:dev`
+  - Result: `https://carddamda-develop.vercel.app` now points to `https://carddamda-fkocc7xjb-hanc0ms-projects.vercel.app`.
+- Local configured API behavior:
+  - Command: `npm run check:deck-recognition http://localhost:5174`
+  - Result: `{"available":true,"provider":"openai","model":"gpt-5.2","acceptedMimeTypes":["image/jpeg","image/png","image/webp"],"maxImageBytes":3145728}`
+- Live OpenAI recognition smoke:
+  - Input: temporary synthetic deck-list PNG with visible card names and quantities.
+  - Result: `POST http://localhost:5174/api/deck-image-recognition` returned HTTP 200.
+  - Recognized rows: `푸른 눈의 백룡 x3`, `블랙 매지션 x2`, `하루 우라라 x3`, `무덤의 지명자 x2`, `번개 x1`, `푸른 눈의 정령룡 x1`.
+  - Unresolved rows: none.
 
 ## Coverage
 - Domain normalization deduplicates recognized cards and sums quantity.
@@ -44,8 +57,8 @@ Verify the feature for uploading Yu-Gi-Oh NEURON / Master Duel deck-list images 
 - UI state flow is verified through browser-level mock API interaction.
 
 ## Known limitations
-- Actual vision recognition requires `OPENAI_API_KEY` in local/production env.
-- Vercel env inspection found no `OPENAI_API_KEY`, so the deployed API will return missing-config until that secret is added.
+- Vercel Deployment Protection returns 401 to unauthenticated `curl` against `https://carddamda-develop.vercel.app/api/deck-image-recognition`, so deployed endpoint availability was verified by Vercel env/inspect plus successful redeploy rather than public HTTP curl.
+- Real NEURON/Master Duel screenshot recognition still needs a user-provided screenshot sample for final product-quality calibration.
 - Recognition quality depends on screenshot quality and model output; unresolved/low-confidence warnings remain first-class.
 - Current UI appends recognized rows directly after provider success. A fuller per-card review table remains future hardening.
 

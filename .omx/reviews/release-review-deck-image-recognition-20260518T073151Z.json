@@ -1,5 +1,5 @@
 {
-  "verdict": "NO_GO",
+  "verdict": "GO",
   "reviewer": "release-reviewer",
   "objective": "Implement deck-list image recognition import for Yu-Gi-Oh NEURON / Master Duel images so recognized cards are added to search rows in bulk.",
   "evidence": {
@@ -11,12 +11,15 @@
     "build": "Production build passed.",
     "browserFlow": "Playwright mock upload added recognized rows and displayed unresolved warnings.",
     "configGuard": "GET /api/deck-image-recognition exposes provider availability without leaking secrets, and the UI disables deck upload when OPENAI_API_KEY is missing.",
-    "developmentDeployment": "https://carddamda-develop.vercel.app points to a Vercel Preview deployment whose remote build passed and includes api/deck-image-recognition."
+    "developmentDeployment": "https://carddamda-develop.vercel.app points to https://carddamda-fkocc7xjb-hanc0ms-projects.vercel.app; remote build passed and includes api/deck-image-recognition.",
+    "providerConfiguration": "OPENAI_API_KEY is configured locally in .env.local and in Vercel Preview as an encrypted environment variable.",
+    "localConfigEndpoint": "GET http://localhost:5174/api/deck-image-recognition returns available:true with provider openai and model gpt-5.2.",
+    "liveRecognitionSmoke": "A temporary synthetic deck-list PNG produced HTTP 200 from the local API and recognized six Yu-Gi-Oh cards with correct quantities and no unresolved rows."
   },
-  "blockers": [
-    "Actual recognition cannot be verified or used in this workspace/Vercel project until OPENAI_API_KEY is configured locally and in Vercel."
-  ],
+  "blockers": [],
   "knownLimitations": [
+    "Vercel Deployment Protection returns 401 to unauthenticated curl against the dev alias, so remote runtime availability was verified by environment inspection and redeploy rather than public endpoint curl.",
+    "Real NEURON/Master Duel screenshot recognition still needs a user-provided screenshot sample for product-quality calibration.",
     "The feature relies on model vision rather than a local Yu-Gi-Oh visual identity database, so uncertain cards may require user correction.",
     "A detailed per-card confirmation table is not included in this iteration; warnings are shown and rows remain editable before search."
   ],
