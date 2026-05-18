@@ -9,13 +9,16 @@ describe('openai deck recognition adapter', () => {
   it('sends image input and parses structured output text', async () => {
     const fetchMock = vi.fn(async (_url: string, init: RequestInit) => {
       const body = JSON.parse(String(init.body)) as {
-        input: Array<{ content: Array<{ type: string; image_url?: string }> }>;
+        input: Array<{ content: Array<{ type: string; image_url?: string; text?: string }> }>;
       };
 
       expect(body.input[0].content.some((item) => item.type === 'input_image')).toBe(true);
       expect(body.input[0].content.find((item) => item.type === 'input_image')?.image_url).toBe(
         'data:image/jpeg;base64,ZmFrZQ=='
       );
+      const prompt = body.input[0].content.find((item) => item.type === 'input_text')?.text ?? '';
+      expect(prompt).toContain('preserve the visible card title exactly');
+      expect(prompt).toContain('unresolved instead of guessing');
 
       return new Response(
         JSON.stringify({

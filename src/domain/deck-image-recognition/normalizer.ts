@@ -36,12 +36,13 @@ export function normalizeDeckRecognitionResponse(
   raw: RawDeckRecognitionResponse
 ): DeckImageRecognitionResponse {
   const warnings = normalizeWarnings(raw.warnings);
-  const recognized = normalizeRecognizedCards(raw.recognized, warnings);
+  const unresolved = normalizeUnresolvedCards(raw.unresolved);
+  const recognized = normalizeRecognizedCards(raw.recognized, unresolved, warnings);
 
   return {
     sourceTemplate: normalizeSourceHint(raw.sourceTemplate),
     recognized,
-    unresolved: normalizeUnresolvedCards(raw.unresolved),
+    unresolved,
     warnings
   };
 }
@@ -78,10 +79,17 @@ export function appendRecognizedCardsToRows(
   return orderedRows;
 }
 
-function normalizeRecognizedCards(value: unknown, warnings: string[]) {
+const AUTO_ADD_CONFIDENCE_THRESHOLD = 0.6;
+
+function normalizeRecognizedCards(
+  value: unknown,
+  unresolved: UnresolvedDeckCard[],
+  warnings: string[]
+) {
   if (!Array.isArray(value)) return [];
 
   const byTerm = new Map<string, RecognizedDeckCard>();
+  const bySourceName = new Map<string, string>();
 
   for (const item of value) {
     if (!isRecord(item)) continue;
@@ -92,6 +100,38 @@ function normalizeRecognizedCards(value: unknown, warnings: string[]) {
     const quantity = clampQuantity(toInteger(item.quantity, 1));
     const confidence = clampConfidence(toNumber(item.confidence, 0));
     const key = normalizeSearchTerm(searchTerm);
+    const sourceName = nullableString(item.sourceName);
+    const sourceKey = sourceName ? normalizeSearchTerm(sourceName) : '';
+
+    if (confidence > 0 && confidence < AUTO_ADD_CONFIDENCE_THRESHOLD) {
+      warnings.push(`낮은 확신도로 자동 추가하지 않은 카드가 있습니다: ${searchTerm}`);
+      unresolved.push({
+        quantity,
+        section: normalizeSection(item.section),
+        reason: `낮은 확신도(${Math.round(confidence * 100)}%): ${sourceName ?? searchTerm}`
+      });
+      continue;
+    }
+
+    const existingSourceTermKey = sourceKey ? bySourceName.get(sourceKey) : undefined;
+    if (existingSourceTermKey && existingSourceTermKey !== key) {
+      const existingBySource = byTerm.get(existingSourceTermKey);
+      if (!existingBySource || confidence > existingBySource.confidence) {
+        if (existingBySource) {
+          byTerm.delete(existingSourceTermKey);
+          warnings.push(
+            `같은 원문 카드명에서 서로 다른 검색어가 나와 더 높은 확신도 항목만 사용했습니다: ${sourceName}`
+          );
+        }
+        bySourceName.set(sourceKey, key);
+      } else {
+        warnings.push(
+          `같은 원문 카드명에서 나온 낮은 확신도 검색어를 제외했습니다: ${searchTerm}`
+        );
+        continue;
+      }
+    }
+
     const existing = byTerm.get(key);
 
     if (existing) {
@@ -103,16 +143,18 @@ function normalizeRecognizedCards(value: unknown, warnings: string[]) {
       continue;
     }
 
-    if (confidence > 0 && confidence < 0.55) {
+    if (confidence > 0 && confidence < 0.75) {
       warnings.push(`낮은 확신도로 인식된 카드가 있습니다: ${searchTerm}`);
     }
+
+    if (sourceKey) bySourceName.set(sourceKey, key);
 
     byTerm.set(key, {
       searchTerm,
       quantity,
       confidence,
       section: normalizeSection(item.section),
-      sourceName: nullableString(item.sourceName),
+      sourceName,
       note: nullableString(item.note)
     });
   }

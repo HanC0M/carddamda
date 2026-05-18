@@ -1,0 +1,19 @@
+{
+  "verdict": "GO",
+  "reviewer": "release-reviewer",
+  "objective": "Fix low-resolution deck image recognition and prevent mutated/incorrect card names from being auto-added to purchase search rows.",
+  "evidence": {
+    "rootCause": "Prompt allowed search-term localization, normalization auto-added low-confidence guesses, and conflicts were deduped only by final searchTerm.",
+    "promptFix": "Recognition now instructs OCR-first behavior, exact readable-title preservation, unresolved on uncertainty, and no duplicate searchTerm values for the same sourceName.",
+    "normalizationFix": "Low-confidence guesses move to unresolved and same-sourceName conflicts keep only the highest-confidence candidate.",
+    "frontendFix": "Small screenshots are upscaled to a 1200px long edge before upload processing.",
+    "tests": "13 test files passed, 36 tests passed.",
+    "build": "Production build passed.",
+    "reproduction": "The low-resolution synthetic deck image no longer returned the previous incorrect duplicate/mutated rows."
+  },
+  "blockers": [],
+  "knownLimitations": [
+    "Images with no readable title still rely on visual model inference, but low-confidence candidates are no longer auto-added.",
+    "Preserving English visible names prevents wrong Korean mutations, but a future verified card-name dictionary would improve Korean shop search terms safely."
+  ]
+}

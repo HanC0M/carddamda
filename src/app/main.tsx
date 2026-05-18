@@ -27,6 +27,7 @@ type DeckImportState = {
 const MAX_DECK_SOURCE_IMAGE_BYTES = 12 * 1024 * 1024;
 const MAX_DECK_UPLOAD_BYTES = 3 * 1024 * 1024;
 const MAX_DECK_IMAGE_DIMENSION = 1600;
+const MIN_DECK_OCR_IMAGE_DIMENSION = 1200;
 const initialDeckImportState: DeckImportState = {
   status: 'checking',
   message: '덱 이미지 인식 설정을 확인하는 중입니다.',
@@ -428,7 +429,11 @@ function App() {
 
 async function prepareDeckImageDataUrl(file: File): Promise<string> {
   const image = await loadImage(file);
-  const scale = Math.min(1, MAX_DECK_IMAGE_DIMENSION / Math.max(image.width, image.height));
+  const longestSide = Math.max(image.width, image.height);
+  const scale =
+    longestSide < MIN_DECK_OCR_IMAGE_DIMENSION
+      ? MIN_DECK_OCR_IMAGE_DIMENSION / longestSide
+      : Math.min(1, MAX_DECK_IMAGE_DIMENSION / longestSide);
   const width = Math.max(1, Math.round(image.width * scale));
   const height = Math.max(1, Math.round(image.height * scale));
   const canvas = document.createElement('canvas');

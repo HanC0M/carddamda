@@ -100,10 +100,14 @@ function buildPrompt(sourceHint: DeckImageSourceHint) {
     'You are helping Carddamda import a Yu-Gi-Oh purchase list from a deck-list screenshot.',
     'The screenshot may be from Yu-Gi-Oh Master Duel or Yu-Gi-Oh NEURON.',
     `Source hint from the user interface: ${sourceHint}.`,
-    'Identify visible cards as Korean search terms suitable for a Korean TCG shopping search.',
+    'First read the card title text that is visible in the screenshot. Prefer OCR over card-art guessing.',
+    'For searchTerm, preserve the visible card title exactly when the title text is readable, including English, Korean, punctuation, and spacing.',
+    'Do not translate, localize, abbreviate, or replace a readable card title with a different Korean card name.',
+    'Only use an official Korean card name when the card title text is not readable but the card identity is visually clear with high confidence.',
     'Count duplicate cards and quantity badges. Keep main/extra/side section if visible.',
     'Return only cards you can identify. Use unresolved entries for tiles that are visible but cannot be identified.',
-    'Do not invent cards. If Korean names are uncertain, use the most likely Korean card name and add a warning.'
+    'If the image is low resolution, blurry, cropped, or the title is uncertain, put the card in unresolved instead of guessing.',
+    'Do not invent cards. Do not output two different searchTerm values for the same sourceName.'
   ].join('\n');
 }
 

@@ -42,6 +42,72 @@ describe('deck image recognition normalization', () => {
     expect(normalized.warnings[0]).toContain('대체 일러스트');
   });
 
+  it('does not auto-add low-confidence guesses', () => {
+    const normalized = normalizeDeckRecognitionResponse({
+      sourceTemplate: 'master_duel',
+      recognized: [
+        {
+          searchTerm: '증식의 G',
+          quantity: 3,
+          confidence: 0.35,
+          section: 'main',
+          sourceName: 'Ash Blossom & Joyous Spring',
+          note: 'low resolution guess'
+        },
+        {
+          searchTerm: '하루 우라라',
+          quantity: 3,
+          confidence: 0.9,
+          section: 'main',
+          sourceName: 'Ash Blossom & Joyous Spring',
+          note: null
+        }
+      ],
+      unresolved: [],
+      warnings: []
+    });
+
+    expect(normalized.recognized).toHaveLength(1);
+    expect(normalized.recognized[0].searchTerm).toBe('하루 우라라');
+    expect(normalized.unresolved).toHaveLength(1);
+    expect(normalized.unresolved[0].reason).toContain('낮은 확신도');
+    expect(normalized.warnings).toContain('낮은 확신도로 자동 추가하지 않은 카드가 있습니다: 증식의 G');
+  });
+
+  it('keeps only the highest-confidence search term for the same source card', () => {
+    const normalized = normalizeDeckRecognitionResponse({
+      sourceTemplate: 'master_duel',
+      recognized: [
+        {
+          searchTerm: '증식의 G',
+          quantity: 3,
+          confidence: 0.72,
+          section: 'main',
+          sourceName: 'Ash Blossom & Joyous Spring',
+          note: null
+        },
+        {
+          searchTerm: '하루 우라라',
+          quantity: 3,
+          confidence: 0.9,
+          section: 'main',
+          sourceName: 'Ash Blossom & Joyous Spring',
+          note: null
+        }
+      ],
+      unresolved: [],
+      warnings: []
+    });
+
+    expect(normalized.recognized).toHaveLength(1);
+    expect(normalized.recognized[0]).toMatchObject({
+      searchTerm: '하루 우라라',
+      quantity: 3,
+      confidence: 0.9
+    });
+    expect(normalized.warnings.some((warning) => warning.includes('같은 원문 카드명'))).toBe(true);
+  });
+
   it('appends recognized cards into existing purchase rows by normalized term', () => {
     const rows = appendRecognizedCardsToRows(
       [{ id: 'r1', searchTerm: '증식의 G', quantity: 1 }],
