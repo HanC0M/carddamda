@@ -23,6 +23,11 @@ Verify the feature for uploading Yu-Gi-Oh NEURON / Master Duel deck-list images 
   - UI added both recognized search rows.
   - UI displayed `2개 카드를 구매 요청에 추가했습니다.`
   - UI displayed warning text including `1개 카드는 인식하지 못했습니다.`
+- Development deployment:
+  - Command: `npm run deploy:dev`
+  - Result: Vercel Preview build succeeded.
+  - Stable dev URL: `https://carddamda-develop.vercel.app`
+  - Preview URL: `https://carddamda-m50w3iqtl-hanc0ms-projects.vercel.app`
 
 ## Coverage
 - Domain normalization deduplicates recognized cards and sums quantity.
@@ -33,6 +38,7 @@ Verify the feature for uploading Yu-Gi-Oh NEURON / Master Duel deck-list images 
 
 ## Known limitations
 - Actual vision recognition requires `OPENAI_API_KEY` in local/production env.
+- Vercel env inspection found no `OPENAI_API_KEY`, so the deployed API will return missing-config until that secret is added.
 - Recognition quality depends on screenshot quality and model output; unresolved/low-confidence warnings remain first-class.
 - Current UI appends recognized rows directly after provider success. A fuller per-card review table remains future hardening.
 

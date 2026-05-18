@@ -9,10 +9,11 @@
     "domainBoundary": "Recognition types, response normalization, deduplication, and row append/merge logic live under src/domain/deck-image-recognition/.",
     "tests": "13 test files passed, 33 tests passed.",
     "build": "Production build passed.",
-    "browserFlow": "Playwright mock upload added recognized rows and displayed unresolved warnings."
+    "browserFlow": "Playwright mock upload added recognized rows and displayed unresolved warnings.",
+    "developmentDeployment": "https://carddamda-develop.vercel.app points to Vercel preview https://carddamda-m50w3iqtl-hanc0ms-projects.vercel.app, whose remote build passed."
   },
   "blockers": [
-    "Actual recognition cannot be verified or used in this workspace/Vercel project until OPENAI_API_KEY is configured."
+    "Actual recognition cannot be verified or used in this workspace/Vercel project until OPENAI_API_KEY is configured locally and in Vercel."
   ],
   "knownLimitations": [
     "The feature relies on model vision rather than a local Yu-Gi-Oh visual identity database, so uncertain cards may require user correction.",
