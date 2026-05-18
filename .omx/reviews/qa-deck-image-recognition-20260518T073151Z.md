@@ -17,6 +17,12 @@ Verify the feature for uploading Yu-Gi-Oh NEURON / Master Duel deck-list images 
 - API missing-config behavior:
   - `POST /api/deck-image-recognition` with a valid image data URL and no local `OPENAI_API_KEY`
   - Result: `503 {"error":"덱 이미지 인식 설정이 아직 연결되지 않았습니다."}`
+- API config behavior:
+  - `GET /api/deck-image-recognition` without local `OPENAI_API_KEY`
+  - Result: `{"available":false,"provider":"openai","model":"gpt-5.2","acceptedMimeTypes":["image/jpeg","image/png","image/webp"],"maxImageBytes":3145728}`
+- UI unavailable behavior:
+  - Playwright verified the session panel shows `덱 이미지 인식 설정이 아직 연결되지 않았습니다.`
+  - The upload control is disabled as `덱 이미지 인식 설정 필요` until the provider key is configured.
 - Browser flow with mocked recognition response:
   - Playwright uploaded a valid PNG into the hidden file input.
   - Mocked `/api/deck-image-recognition` returned `증식의 G x3`, `무한포영 x2`, one unresolved card, and one warning.
@@ -27,12 +33,13 @@ Verify the feature for uploading Yu-Gi-Oh NEURON / Master Duel deck-list images 
   - Command: `npm run deploy:dev`
   - Result: Vercel Preview build succeeded.
   - Stable dev URL: `https://carddamda-develop.vercel.app`
-  - Preview URL: `https://carddamda-m50w3iqtl-hanc0ms-projects.vercel.app`
+  - Preview URL: `https://carddamda-9lgtr5amu-hanc0ms-projects.vercel.app`
 
 ## Coverage
 - Domain normalization deduplicates recognized cards and sums quantity.
 - Purchase-row append logic quantity-merges existing rows by normalized search term.
 - API request parser validates data URL MIME/type and missing provider configuration.
+- API config exposes availability without leaking `OPENAI_API_KEY`.
 - OpenAI adapter test verifies image input and structured output parsing without external network calls.
 - UI state flow is verified through browser-level mock API interaction.
 
